@@ -3,54 +3,169 @@ import React from "react";
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="bg-gray-900 text-gray-200 mt-10">
+      <div className="container mx-auto px-4 pt-8 pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+          {/* Brand / About */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Rupsha Fish</h3>
-            <p className="text-gray-300">
-              Fresh fish delivered to your doorstep. Premium quality, sourced locally from trusted fishermen.
+            <div className="flex items-center gap-2 mb-3">
+              <img
+                src="/images/logo.svg"
+                alt="Rupsha Fish"
+                className="h-9 w-auto"
+              />
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Rupsha Fish
+                </h3>
+                <p className="text-[11px] text-gray-400">
+                  Fresh river &amp; sea fish • No farm fish
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-300 leading-relaxed">
+              Rupsha Fish collects premium wild-caught fish directly from rivers
+              and the sea. Each order is cleaned, hygienically packed, and
+              delivered with care to your doorstep inside Dhaka.
             </p>
           </div>
-          
+
+          {/* Quick Links */}
           <div>
-            <h4 className="font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-gray-300">
-              <li><a href="#home" className="hover:text-white transition">Home</a></li>
-              <li><a href="#products" className="hover:text-white transition">Products</a></li>
-              <li><a href="#delivery" className="hover:text-white transition">Delivery Info</a></li>
-              <li><a href="#reviews" className="hover:text-white transition">Reviews</a></li>
+            <h4 className="text-sm font-semibold text-white mb-3">
+              Quick Links
+            </h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a
+                  href="#home"
+                  className="hover:text-[#46CDCF] transition-colors"
+                >
+                  🏠 Home
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#products-section"
+                  className="hover:text-[#46CDCF] transition-colors"
+                >
+                  🐟 Browse Fish
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#cart-section"
+                  className="hover:text-[#46CDCF] transition-colors"
+                >
+                  🛒 My Cart
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#contact-section"
+                  className="hover:text-[#46CDCF] transition-colors"
+                >
+                  📞 Contact &amp; Support
+                </a>
+              </li>
             </ul>
           </div>
-          
+
+          {/* Contact + Social */}
           <div>
-            <h4 className="font-semibold mb-4">Contact Info</h4>
-            <ul className="space-y-2 text-gray-300">
-              <li>📞 +8801521493443</li>
-              <li>📧 info@rupsha_fish.com</li>
-              <li>📍 Dhaka, Bangladesh</li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-4">Follow Us</h4>
-            <div className="flex gap-4">
-              <a href="#" className="text-gray-300 hover:text-white transition">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                </svg>
-              </a>
-              <a href="#" className="text-gray-300 hover:text-white transition">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
-                </svg>
-              </a>
+            <h4 className="text-sm font-semibold text-white mb-3">
+              Order &amp; Support
+            </h4>
+
+            <div className="space-y-2 text-sm mb-4">
+              <p>
+                <span className="text-gray-400">অর্ডার / WhatsApp:&nbsp;</span>
+                <a
+                  href="tel:+8801521493443"
+                  className="font-semibold hover:text-[#46CDCF] transition-colors"
+                >
+                  +8801521493443
+                </a>
+              </p>
+              <p>
+                <span className="text-gray-400">হট লাইন:&nbsp;</span>
+                <a
+                  href="tel:09642922922"
+                  className="font-semibold hover:text-[#46CDCF] transition-colors"
+                >
+                  09642-922922
+                </a>
+              </p>
+              <p className="text-xs text-gray-400">
+                Delivery inside Dhaka • Slots: Morning &amp; Evening
+              </p>
+            </div>
+
+            <a
+              href="https://wa.me/8801521493443"
+              target="_blank"
+              rel="noreferrer"
+              className="
+                inline-flex items-center justify-center 
+                px-4 py-2 rounded-full text-xs font-semibold 
+                bg-[#25D366] text-white 
+                hover:bg-[#1ebe5b] 
+                transition-colors shadow-md hover:shadow-lg 
+              "
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                className="w-4 h-4 mr-2"
+              >
+                <path d="M20.52 3.48A11.82 11.82 0 0012 0a11.94 11.94 0 00-10.3 17.94L0 24l6.3-1.65A12 12 0 1012 0a11.79 11.79 0 008.52 3.48zM12 21.5a9.53 9.53 0 01-4.86-1.32l-.35-.21-3.73.98.99-3.64-.23-.36A9.55 9.55 0 1121.5 12a9.52 9.52 0 01-9.5 9.5zm5.47-7.12c-.3-.15-1.75-.86-2.04-.97-.28-.1-.48-.15-.68.14s-.8 1-1 1.22-.37.26-.64.13-1.26-.47-2.4-1.49a9.54 9.54 0 01-1.76-2.08c-.2-.33-.02-.5.13-.67s.3-.37.45-.55.28-.32.41-.51a.55.55 0 00.07-.57c-.08-.15-.68-1.62-.94-2.22s-.5-.49-.69-.5h-.58a1.18 1.18 0 00-.85.39A3.69 3.69 0 006.5 9.1a6.44 6.44 0 001.31 3.54c.16.22 2.18 3.39 5.32 4.72a8.89 8.89 0 002.37.73 3.9 3.9 0 001.79-.11 2.46 2.46 0 001.62-1.29 2.1 2.1 0 00.14-1.24c-.06-.12-.25-.21-.58-.37z" />
+              </svg>
+
+              Order on WhatsApp
+            </a>
+
+
+            <div>
+              <p className="text-xs text-gray-400 mb-2">
+                Follow Rupsha Fish on social:
+              </p>
+              <div className="flex items-center gap-3">
+                {/* Facebook */}
+                <a
+                  href="https://www.facebook.com/profile.php?id=61581693006812"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gray-800 hover:bg-[#1877F2] transition-colors"
+                  aria-label="Rupsha Fish on Facebook"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="w-4 h-4 fill-white"
+                  >
+                    <path d="M22.675 0h-21.35C.597 0 0 .597 0 1.326v21.348C0 23.403.597 24 1.326 24H12.82v-9.294H9.692V11.01h3.128V8.414c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.696h-3.12V24h6.116C23.403 24 24 23.403 24 22.674V1.326C24 .597 23.403 0 22.675 0z" />
+                  </svg>
+                </a>
+
+                {/* Placeholder for future socials */}
+                {/* 
+                <a ...>Instagram</a>
+                <a ...>YouTube</a>
+                */}
+              </div>
             </div>
           </div>
         </div>
-        
-        <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-300">
-          <p>© 2025 Rupsha Fish. All rights reserved. | Fresh Fish Delivery Service</p>
+
+        {/* Bottom bar */}
+        <div className="border-t border-gray-800 mt-8 pt-4 text-center text-xs text-gray-500">
+          <p>
+            © {new Date().getFullYear()} Rupsha Fish. All rights reserved. Fresh
+            river &amp; sea fish delivery in Dhaka.
+          </p>
         </div>
       </div>
     </footer>

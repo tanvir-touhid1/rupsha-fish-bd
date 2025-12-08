@@ -1,150 +1,337 @@
 // components/Cart.jsx
-import React from "react";
+import React, { useState } from "react";
+import OrderFormModal from "./OrderFormModal.jsx";
 
-const Cart = ({ cartItems, removeFromCart, clearCart, subtotal }) => {
-  const deliveryFee = subtotal > 50 ? 0 : 5; // Free delivery over $50
-  const finalTotal = subtotal + deliveryFee;
-  
-  // Calculate total items count
-  const totalItems = cartItems.reduce((sum, item) => sum + (item.cartQuantity || 1), 0);
+const FREE_DELIVERY_THRESHOLD = 1000; // Tk
+const BASE_DELIVERY_FEE = 60; // Tk (change if needed)
 
-  // WhatsApp message with proper quantities
-  const whatsappMessage = `*Rupsha Fish Order Summary*\n\n${cartItems.map(item => 
-    `• ${item.name} (${item.cartQuantity || 1}kg) - $${item.totalPrice || item.price}`
-  ).join('\n')}\n\n*Subtotal:* $${subtotal}\n*Delivery:* ${deliveryFee === 0 ? 'FREE' : `$${deliveryFee}`}\n*Total:* $${finalTotal}\n\nPlease confirm this order and provide delivery details.`;
+const Cart = ({
+  cartItems,
+  removeFromCart,
+  clearCart,
+  subtotal,
+  onUpdateQuantity,
+}) => {
+  const [isOpen, setIsOpen] = useState(true);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+
+  const toggleCart = () => setIsOpen(!isOpen);
+
+  // helper: format quantity nicely (1 or 1.5)
+  const formatQty = (q) => (Number.isInteger(q) ? q : q.toFixed(1));
+
+  // Total items in cart (kg-based)
+  const totalItems = cartItems.reduce(
+    (sum, item) => sum + (item.cartQuantity || 1),
+    0
+  );
+
+  // Estimated subtotal
+  const estimatedSubtotal =
+    typeof subtotal === "number"
+      ? subtotal
+      : cartItems.reduce((sum, item) => {
+          const qty = item.cartQuantity || 1;
+          const basePrice = item.priceMin ?? item.price ?? 0;
+          return sum + basePrice * qty;
+        }, 0);
+
+  const deliveryFee =
+    estimatedSubtotal === 0 || estimatedSubtotal >= FREE_DELIVERY_THRESHOLD
+      ? 0
+      : BASE_DELIVERY_FEE;
+
+  const estimatedTotal = estimatedSubtotal + deliveryFee;
+
+  // Quantity change helpers (0.5 kg step, min 0.5kg)
+  const handleDecrease = (index) => {
+    if (!onUpdateQuantity) return;
+    const current = cartItems[index]?.cartQuantity || 1;
+    const next = Math.max(0.5, current - 0.5);
+    onUpdateQuantity(index, Number(next.toFixed(1)));
+  };
+
+  const handleIncrease = (index) => {
+    if (!onUpdateQuantity) return;
+    const current = cartItems[index]?.cartQuantity || 1;
+    const next = current + 0.5;
+    onUpdateQuantity(index, Number(next.toFixed(1)));
+  };
+
+  // WhatsApp summary
+  const whatsappMessage = (() => {
+    if (!cartItems.length) {
+      return `I would like to place an order from Rupsha Fish. Please share available items and prices.`;
+    }
+
+    const lines = cartItems.map((item) => {
+      const qty = item.cartQuantity || 1;
+      const basePrice = item.priceMin ?? item.price ?? 0;
+      const approx =
+        basePrice > 0 ? `~৳${(basePrice * qty).toFixed(0)}` : "price to confirm";
+
+      return `• ${item.nameBn || item.name} – ${formatQty(qty)}kg (${approx})`;
+    });
+
+    const deliveryText =
+      deliveryFee === 0
+        ? `Free (over ৳${FREE_DELIVERY_THRESHOLD})`
+        : `~৳${deliveryFee} inside Dhaka`;
+
+    return (
+      `*Rupsha Fish Order (Estimate)*\n\n` +
+      `${lines.join("\n")}\n\n` +
+      `Estimated subtotal: ৳${estimatedSubtotal.toFixed(0)}\n` +
+      `Delivery: ${deliveryText}\n` +
+      `Estimated total: ৳${estimatedTotal.toFixed(0)}\n\n` +
+      `*Note:* Final price confirmed after weighing the fish.\n\n` +
+      `Please provide:\n` +
+      `• Name\n• Mobile number\n• Delivery address\n• Preferred time (morning/evening)`
+    );
+  })();
+
+  const whatsappUrl = `https://wa.me/8801521493443?text=${encodeURIComponent(
+    whatsappMessage
+  )}`;
+
+  const handleOrderSuccess = (msg) => {
+    clearCart();
+    alert(msg || "Order submitted successfully!");
+  };
+
+  const handleOrderError = (msg) => {
+    alert(msg || "Failed to submit order. Please try WhatsApp.");
+  };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
-      {/* Cart Header */}
-      <div className="bg-gradient-to-r from-[#47466D] to-[#3D84A7] px-6 py-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5.5M7 13l2.5 5.5m0 0L17 21" />
-            </svg>
-            Shopping Cart ({totalItems} items)
+    <>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-md overflow-hidden">
+        {/* HEADER (Collapsible Button) */}
+        <button
+          onClick={toggleCart}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-100 border-b border-gray-200"
+        >
+          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            🛒 My Cart ({formatQty(totalItems)} kg)
           </h2>
-          {cartItems.length > 0 && (
-            <button
-              onClick={clearCart}
-              className="text-white/80 hover:text-white text-sm font-medium flex items-center gap-2 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Clear Cart
-            </button>
-          )}
-        </div>
-      </div>
+          <span className="text-xl text-gray-600">{isOpen ? "−" : "+"}</span>
+        </button>
 
-      {/* Cart Content */}
-      <div className="p-6">
-        {cartItems.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5.5M7 13l2.5 5.5m0 0L17 21" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">Your cart is empty</h3>
-            <p className="text-gray-500 mb-6">Add some fresh fish to get started!</p>
-            <a
-              href="#products"
-              className="inline-flex items-center gap-2 bg-cyan-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-cyan-600 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Browse Products
-            </a>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Cart Items */}
-            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-              {cartItems.map((item, index) => (
-                <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200/50">
-                  {/* Product Image */}
-                  <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                    <img 
-                      src={item.image} 
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  
-                  {/* Product Info */}
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-gray-800">{item.name}</h3>
-                    <p className="text-gray-500 text-sm">
-                      {item.cartQuantity || 1}kg • ${item.price}/kg
-                    </p>
-                  </div>
-                  
-                  {/* Price and Actions */}
-                  <div className="flex items-center gap-4">
-                    <span className="font-bold text-gray-800">
-                      ${item.totalPrice || item.price}
-                    </span>
+        {/* COLLAPSIBLE BODY */}
+        {isOpen && (
+          <div className="p-4">
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Cart Items */}
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Shopping Cart ({formatQty(totalItems)} kg)
+                  </h2>
+
+                  {cartItems.length > 0 && (
                     <button
-                      onClick={() => removeFromCart(index)}
-                      className="text-red-500 hover:text-red-700 transition-colors p-2 rounded-lg hover:bg-red-50"
-                      title="Remove item"
+                      onClick={clearCart}
+                      className="text-sm text-gray-500 hover:text-red-500 flex items-center gap-1"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      🗑 Clear Cart
+                    </button>
+                  )}
+                </div>
+
+                {cartItems.length === 0 ? (
+                  <p className="text-gray-500 text-sm">
+                    Your cart is empty. Add some fresh river &amp; sea fish.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {cartItems.map((item, index) => {
+                      const qty = item.cartQuantity || 1;
+                      const basePrice = item.priceMin ?? item.price ?? 0;
+                      const linePrice =
+                        basePrice > 0 ? basePrice * qty : undefined;
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between bg-gray-50 rounded-lg p-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-14 h-14 rounded-md object-cover"
+                            />
+                            <div>
+                              <h3 className="font-semibold text-gray-800">
+                                {item.nameBn || item.name}
+                              </h3>
+
+                              {/* Quantity control + approx price */}
+                              <div className="mt-1 flex items-center gap-2">
+                                <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1 border border-gray-200">
+                                  <button
+                                    onClick={() => handleDecrease(index)}
+                                    className="text-gray-600 font-bold text-lg"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="text-xs font-medium text-gray-800">
+                                    {formatQty(qty)}kg
+                                  </span>
+                                  <button
+                                    onClick={() => handleIncrease(index)}
+                                    className="text-gray-600 font-bold text-lg"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+
+                                {linePrice && (
+                                  <span className="text-[11px] text-gray-500">
+                                    Approx: ৳{linePrice.toFixed(0)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => removeFromCart(index)}
+                            className="text-xs px-3 py-1 rounded-full border border-red-300 text-red-600 hover:bg-red-50 transition"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Summary + Checkout Options */}
+              <div className="w-full lg:w-80">
+                <div className="bg-gray-50 rounded-xl border border-gray-200 p-5">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                    Estimated Summary
+                  </h3>
+
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Subtotal (estimate)
+                      </span>
+                      <span className="font-semibold">
+                        ৳{estimatedSubtotal.toFixed(0)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Delivery inside Dhaka
+                        <span className="block text-[11px] text-gray-400">
+                          Free over ৳{FREE_DELIVERY_THRESHOLD}
+                        </span>
+                      </span>
+
+                      <span className="font-semibold">
+                        {deliveryFee === 0 ? "Free" : `~৳${deliveryFee}`}
+                      </span>
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between">
+                      <span className="font-semibold text-gray-800">
+                        Total (estimate)
+                      </span>
+                      <span className="font-bold text-[#3D84A7]">
+                        ৳{estimatedTotal.toFixed(0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-gray-500 mb-3">
+                    Final price depends on weight/size. Our team will confirm
+                    before delivery.
+                  </p>
+
+                  {/* OPTION 1 */}
+                  <div className="mb-2">
+                    <p className="text-[11px] font-medium text-gray-600 mb-1">
+                      Option 1 – Order with form (recommended)
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!cartItems.length) return;
+                        setIsOrderModalOpen(true);
+                      }}
+                      className={`block w-full text-center py-3 rounded-full text-sm font-semibold ${
+                        cartItems.length === 0
+                          ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                          : "bg-green-600 text-white hover:bg-green-700 transition"
+                      }`}
+                      disabled={cartItems.length === 0}
+                    >
+                      📝 Order with Form (Cash on Delivery)
                     </button>
                   </div>
+
+                  {/* OR DIVIDER */}
+                  <div className="flex items-center my-2">
+                    <div className="flex-1 h-px bg-gray-300" />
+                    <span className="px-2 text-[10px] uppercase tracking-wide text-gray-400 font-semibold">
+                      or
+                    </span>
+                    <div className="flex-1 h-px bg-gray-300" />
+                  </div>
+
+                  {/* OPTION 2 */}
+                  <div className="mt-2">
+                    <p className="text-[11px] font-medium text-gray-600 mb-1">
+                      Option 2 – Checkout via WhatsApp
+                    </p>
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`block w-full text-center py-3 rounded-full text-sm font-semibold ${
+                        cartItems.length === 0
+                          ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                          : "bg-[#25D366] text-white hover:bg-[#1ebe5b] transition"
+                      }`}
+                      onClick={(e) => {
+                        if (!cartItems.length) e.preventDefault();
+                      }}
+                    >
+                      💬 Checkout via WhatsApp
+                    </a>
+                  </div>
+
+                  <p className="mt-3 text-center text-[10px] text-gray-500">
+                    Choose <span className="font-semibold">any one</span> option
+                    above to confirm your order.
+                  </p>
+
+                  <div className="mt-2 text-center text-xs text-gray-500">
+                    🗓 Same-day delivery (Morning &amp; Evening slots)
+                  </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Order Summary */}
-            <div className="border-t pt-6 space-y-3">
-              <div className="flex justify-between text-gray-600">
-                <span>Subtotal ({totalItems} items)</span>
-                <span className="font-semibold">${subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Delivery Fee</span>
-                <span className={deliveryFee === 0 ? "text-green-600 font-semibold" : "font-semibold"}>
-                  {deliveryFee === 0 ? "FREE" : `$${deliveryFee}`}
-                </span>
-              </div>
-              {deliveryFee === 0 && (
-                <div className="text-sm text-green-600 bg-green-50 p-2 rounded-lg">
-                  🎉 You qualify for free delivery!
-                </div>
-              )}
-              <div className="flex justify-between text-xl font-bold border-t pt-3">
-                <span>Total</span>
-                <span className="text-cyan-600">${finalTotal.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Checkout Button */}
-            <a
-              href={`https://wa.me/+8801521493443?text=${encodeURIComponent(whatsappMessage)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full bg-gradient-to-r from-[#46CDCF] to-[#3D84A7] hover:from-[#3D84A7] hover:to-[#47466D] text-white py-4 rounded-xl font-bold text-center hover:shadow-lg hover:shadow-[#46CDCF]/25 transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-3"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893c0-3.18-1.24-6.169-3.495-8.418"/>
-              </svg>
-              Checkout on WhatsApp
-            </a>
-
-            {/* Delivery Info */}
-            <div className="text-center text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
-              <p>🗓️ Delivery within 2 hours | 📍 Dhaka area only</p>
             </div>
           </div>
         )}
       </div>
-    </div>
+
+      {/* Order Form Modal */}
+      <OrderFormModal
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+        cartItems={cartItems}
+        estimatedSubtotal={estimatedSubtotal}
+        deliveryFee={deliveryFee}
+        onOrderSuccess={handleOrderSuccess}
+        onOrderError={handleOrderError}
+      />
+    </>
   );
 };
 

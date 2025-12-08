@@ -3,65 +3,74 @@ import React from "react";
 
 const DeliveryInfo = () => {
   return (
-    <section className="py-12 bg-white">
+    <section>
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">Delivery Information</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center p-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+        <div className="text-center mb-8 md:mb-10">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Delivery &amp; Packaging
+          </h2>
+          <p className="mt-2 text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
+            We try to keep delivery simple, transparent and reliable for every order.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+          {/* Area & timing */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-full bg-[#3D84A7]/10 flex items-center justify-center">
+                🚚
+              </div>
+              <h3 className="font-semibold text-gray-900 text-sm md:text-base">
+                Coverage &amp; Timing
+              </h3>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Fresh Guarantee</h3>
-            <p className="text-gray-600">All fish are sourced daily and delivered within 24 hours to ensure maximum freshness.</p>
+            <ul className="text-sm text-gray-600 space-y-2">
+              <li>• Delivery mainly inside Dhaka city (পর্যায়ক্রমে আরও এলাকা যুক্ত হবে)</li>
+              <li>• Same-day delivery for confirmed orders placed before 2 PM</li>
+              <li>• Delivery slots: সকাল &amp; বিকাল – আপনি পছন্দ করতে পারবেন</li>
+            </ul>
           </div>
 
-          <div className="text-center p-6">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          {/* Packaging & handling */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                🧊
+              </div>
+              <h3 className="font-semibold text-gray-900 text-sm md:text-base">
+                Cleaning &amp; Packaging
+              </h3>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Fast Delivery</h3>
-            <p className="text-gray-600">Free delivery within city limits. Same-day delivery available for orders before 2 PM.</p>
+            <ul className="text-sm text-gray-600 space-y-2">
+              <li>• Fish is washed, cleaned and trimmed as per standard practice</li>
+              <li>• Packed in food-grade poly / box to reduce dripping &amp; smell</li>
+              <li>• For long distance, we use extra ice / cooling support if needed</li>
+            </ul>
           </div>
 
-          <div className="text-center p-6">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
+          {/* Charges & policy */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                💳
+              </div>
+              <h3 className="font-semibold text-gray-900 text-sm md:text-base">
+                Delivery Charge &amp; Payment
+              </h3>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Quality Promise</h3>
-            <p className="text-gray-600">100% satisfaction guarantee. If you're not happy with your order, we'll make it right.</p>
+            <ul className="text-sm text-gray-600 space-y-2">
+              <li>• Inside Dhaka: usually ৳60 (exact amount confirmed over phone)</li>
+              <li>• Free delivery on orders above ৳1000 (within selected areas)</li>
+              <li>• Cash on delivery, bKash or bank transfer – as convenient for you</li>
+            </ul>
           </div>
         </div>
 
-        <div className="mt-12 bg-gray-50 rounded-lg p-8">
-          <h3 className="text-2xl font-bold text-center mb-6">Delivery Areas & Times</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold text-lg mb-3">🏙️ City Areas</h4>
-              <ul className="text-gray-600 space-y-2">
-                <li>• Dhaka City - Free delivery</li>
-                <li>• Chittagong City - Free delivery</li>
-                <li>• Sylhet City - Free delivery</li>
-                <li>• Other cities - Contact for rates</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-lg mb-3">⏰ Delivery Times</h4>
-              <ul className="text-gray-600 space-y-2">
-                <li>• Same-day: Order before 2 PM</li>
-                <li>• Next-day: Order after 2 PM</li>
-                <li>• Delivery: 9 AM - 8 PM</li>
-                <li>• Emergency: Contact directly</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        <p className="text-[11px] md:text-xs text-gray-500 text-center mt-6">
+          * Final timing, charge and fish size/weight are confirmed by Rupsha Fish team
+          over phone / WhatsApp before delivery.
+        </p>
       </div>
     </section>
   );
