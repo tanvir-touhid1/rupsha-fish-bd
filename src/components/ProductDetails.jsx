@@ -1,297 +1,487 @@
 // components/ProductDetails.jsx
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+
+const safeNum = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+const getMainImage = (p) =>
+  p?.images?.[0] || p?.image || "/images/fallback-fish.jpg";
+
+const getImages = (product) => {
+  if (Array.isArray(product?.images) && product.images.length > 0) return product.images;
+  if (product?.image) return [product.image];
+  return ["/images/fallback-fish.jpg"];
+};
+
+const avgWeightKg = (range) => {
+  const min = safeNum(range?.min);
+  const max = safeNum(range?.max);
+  if (min == null || max == null) return null;
+  return (min + max) / 2;
+};
+
+const formatMoney = (n) => {
+  const x = safeNum(n);
+  if (x == null) return "—";
+  return `৳${Math.round(x)}`;
+};
+
+const formatQty = (n) => {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "1";
+  if (Number.isInteger(x)) return String(x);
+  return x.toFixed(1).replace(/0+$/, "").replace(/\.$/, "");
+};
+const getNutrition = (p) => {
+  const n = p?.nutrition;
+  if (!n) return null;
+
+  // support: nutrition.per100g (object) or nutrition.enPer100g (object)
+  if (n?.per100g && typeof n.per100g === "object") return n.per100g;
+  if (n?.enPer100g && typeof n.enPer100g === "object") return n.enPer100g;
+
+  // support: nutrition.bn / nutrition.en objects
+  if (n?.bn && typeof n.bn === "object") return n.bn;
+  if (n?.en && typeof n.en === "object") return n.en;
+
+  // fallback: nutrition itself
+  if (typeof n === "object") return n;
+
+  return null;
+};
+
+const cleanNutritionEntries = (obj) => {
+  if (!obj || typeof obj !== "object") return [];
+  return Object.entries(obj).filter(([, v]) => v != null && String(v).trim() !== "");
+};
+
 
 const ProductDetails = ({ product, onClose, addToCart }) => {
-  const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+
+  // selection state
+  const [sizeKey, setSizeKey] = useState("");
+  const [gradeKey, setGradeKey] = useState("");
+  const [count, setCount] = useState(1); // WHOLE_BY_SIZE_COUNT
+  const [kg, setKg] = useState(1);       // KG_SIMPLE / KG_BY_GRADE
 
   if (!product) return null;
 
-  // ✅ Use real product images (supports multiple photos)
-  const images =
-    product.images && product.images.length > 0
-      ? product.images
-      : product.image
-      ? [product.image]
-      : ["/images/fallback-fish.jpg"];
+  const images = getImages(product);
+  const model = product?.pricingModel || "LEGACY";
+  const sellBy = product?.sellBy || "kg";
+
+  const sizeOptions = Array.isArray(product?.sizePricing) ? product.sizePricing : [];
+  const gradeOptions = Array.isArray(product?.gradePricing)
+    ? product.gradePricing
+    : (Array.isArray(product?.sizePricing) ? product.sizePricing : []); // backward-safe for prawns
+
+  // ✅ FIX: init default selections using useEffect (not useMemo)
+  useEffect(() => {
+    if (model === "WHOLE_BY_SIZE_COUNT") {
+      if (!sizeKey && sizeOptions.length > 0) setSizeKey(sizeOptions[0].sizeKey);
+      if (count < 1) setCount(1);
+      return;
+    }
+
+    if (model === "KG_BY_GRADE") {
+      if (!gradeKey && gradeOptions.length > 0) {
+        setGradeKey(gradeOptions[0].gradeKey || gradeOptions[0].sizeKey);
+      }
+      if (kg < 1) setKg(1);
+      return;
+    }
+
+    if (model === "KG_SIMPLE") {
+      if (kg < 1) setKg(1);
+      return;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, product?.id, sizeOptions.length, gradeOptions.length]);
+
+  // base per-kg price for KG_SIMPLE / fallback
+  const kgSimplePricePerKg = useMemo(() => {
+    return (
+      safeNum(product?.startsFrom?.pricePerKg) ??
+      safeNum(product?.priceMin) ??
+      safeNum(product?.price) ??
+      0
+    );
+  }, [product]);
+
+  const selectedSize = useMemo(() => {
+    if (model !== "WHOLE_BY_SIZE_COUNT") return null;
+    return sizeOptions.find((s) => s.sizeKey === sizeKey) || sizeOptions[0] || null;
+  }, [model, sizeKey, sizeOptions]);
+
+  const selectedGrade = useMemo(() => {
+    if (model !== "KG_BY_GRADE") return null;
+    const key = gradeKey;
+    return (
+      gradeOptions.find((g) => (g.gradeKey || g.sizeKey) === key) ||
+      gradeOptions[0] ||
+      null
+    );
+  }, [model, gradeKey, gradeOptions]);
+
+  // compute estimate
+  const estimate = useMemo(() => {
+    if (model === "WHOLE_BY_SIZE_COUNT") {
+      const ppk = safeNum(selectedSize?.pricePerKg) ?? 0;
+      const avg = avgWeightKg(selectedSize?.approxWholeFishWeightKg) ?? 0;
+      return (Number(count) || 1) * avg * ppk;
+    }
+
+    if (model === "KG_SIMPLE") {
+      return (Number(kg) || 1) * (Number(kgSimplePricePerKg) || 0);
+    }
+
+    if (model === "KG_BY_GRADE") {
+      const ppk = safeNum(selectedGrade?.pricePerKg) ?? 0;
+      return (Number(kg) || 1) * ppk;
+    }
+
+    const base = safeNum(product?.priceMin) ?? safeNum(product?.price) ?? 0;
+    return (Number(kg) || 1) * base;
+  }, [model, count, kg, selectedSize, selectedGrade, kgSimplePricePerKg, product]);
+
+  const displayLine = useMemo(() => {
+    if (model === "WHOLE_BY_SIZE_COUNT") {
+      const label = selectedSize?.label?.en || selectedSize?.label?.bn || selectedSize?.sizeKey || "";
+      const ppk = safeNum(selectedSize?.pricePerKg);
+      const avg = avgWeightKg(selectedSize?.approxWholeFishWeightKg);
+      return {
+        title: "Estimated price",
+        sub: `Size: ${label} • ৳${ppk ?? "—"}/kg • Avg wt/fish: ${avg ? `${avg.toFixed(2)}kg` : "—"}`,
+        hint: "Sold as whole fish. Final amount confirmed after weighing.",
+      };
+    }
+    if (model === "KG_BY_GRADE") {
+      const label = selectedGrade?.label?.en || selectedGrade?.label?.bn || (selectedGrade?.gradeKey || selectedGrade?.sizeKey) || "";
+      const ppk = safeNum(selectedGrade?.pricePerKg);
+      return {
+        title: "Estimated price",
+        sub: `Grade: ${label} • ৳${ppk ?? "—"}/kg`,
+        hint: "Price depends on grade (pcs per kg). Final amount confirmed on call.",
+      };
+    }
+    return {
+      title: "Estimated price",
+      sub: `৳${kgSimplePricePerKg || "—"}/kg`,
+      hint: "Sold by weight. Final amount confirmed after weighing.",
+    };
+  }, [model, selectedSize, selectedGrade, kgSimplePricePerKg]);
+
+  // qty step rules
+  const kgStep = model === "KG_BY_GRADE" ? 0.5 : 1;
+
+  const incrementCount = () => setCount((v) => v + 1);
+  const decrementCount = () => setCount((v) => (v > 1 ? v - 1 : 1));
+
+  const incrementKg = () => setKg((v) => Math.round((v + kgStep) * 10) / 10);
+  const decrementKg = () =>
+    setKg((v) => {
+      const next = Math.round((v - kgStep) * 10) / 10;
+      return next >= 1 ? next : 1;
+    });
+
+  // arrows
+  const handlePrevImage = () => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  const handleNextImage = () => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+
+  const title = product?.title?.bn || product?.nameBn || product?.name || "";
+  const titleEn = product?.title?.en || product?.nameEn || "";
+  const nutrition = useMemo(() => getNutrition(product), [product]);
+  const nutritionEntries = useMemo(
+    () => cleanNutritionEntries(nutrition),
+    [nutrition]
+  );
+
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addToCart(product);
+    const sizeK = selectedSize?.sizeKey || "size";
+    const gradeK = selectedGrade?.gradeKey || selectedGrade?.sizeKey || "grade";
+
+    const cartKey =
+      model === "WHOLE_BY_SIZE_COUNT"
+        ? `${product.id}::size:${sizeK}`
+        : model === "KG_BY_GRADE"
+        ? `${product.id}::grade:${gradeK}`
+        : `${product.id}`;
+
+    addToCart({
+      cartKey,
+      id: product.id,
+      slug: product.slug,
+      image: getMainImage(product),
+
+      name: title,
+      nameBn: title,
+      nameEn: titleEn,
+
+      pricingModel: model,
+      sellBy,
+
+      selectedSizeKey: model === "WHOLE_BY_SIZE_COUNT" ? sizeK : null,
+      selectedGradeKey: model === "KG_BY_GRADE" ? gradeK : null,
+
+      selectedSizeLabel:
+        model === "WHOLE_BY_SIZE_COUNT"
+          ? (selectedSize?.label?.bn || selectedSize?.label?.en || selectedSize?.sizeKey || "")
+          : null,
+
+      selectedGradeLabel:
+        model === "KG_BY_GRADE"
+          ? (selectedGrade?.label?.bn || selectedGrade?.label?.en || selectedGrade?.gradeKey || selectedGrade?.sizeKey || "")
+          : null,
+
+      count: model === "WHOLE_BY_SIZE_COUNT" ? count : null,
+      kg: model === "WHOLE_BY_SIZE_COUNT" ? null : kg,
+
+      cartQuantity: model === "WHOLE_BY_SIZE_COUNT" ? count : kg,
+      unit: model === "WHOLE_BY_SIZE_COUNT" ? "fish" : "kg",
+
+      totalPrice: Number.isFinite(Number(estimate)) ? Number(estimate) : 0
+    });
+
+    onClose?.();
+  };
+
+  const whatsappText = useMemo(() => {
+    if (model === "WHOLE_BY_SIZE_COUNT") {
+      const label = selectedSize?.label?.en || selectedSize?.label?.bn || selectedSize?.sizeKey || "";
+      return `Hello! I'd like to order ${count} fish of ${titleEn || title} (Size: ${label}). Estimated: ${formatMoney(estimate)} (final confirmed on call).`;
     }
-    setQuantity(1);
-  };
-
-  const incrementQuantity = () => setQuantity((prev) => prev + 1);
-  const decrementQuantity = () =>
-    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
-
-  // ✅ Arrow navigation
-  const handlePrevImage = () => {
-    setSelectedImage((prev) =>
-      prev === 0 ? images.length - 1 : prev - 1
-    );
-  };
-
-  const handleNextImage = () => {
-    setSelectedImage((prev) =>
-      prev === images.length - 1 ? 0 : prev + 1
-    );
-  };
+    if (model === "KG_BY_GRADE") {
+      const label = selectedGrade?.label?.en || selectedGrade?.label?.bn || (selectedGrade?.gradeKey || selectedGrade?.sizeKey) || "";
+      return `Hello! I'd like to order ${formatQty(kg)}kg of ${titleEn || title} (Grade: ${label}). Estimated: ${formatMoney(estimate)} (final confirmed on call).`;
+    }
+    return `Hello! I'd like to order ${formatQty(kg)}kg of ${titleEn || title}. Estimated: ${formatMoney(estimate)} (final confirmed on call).`;
+  }, [model, count, kg, title, titleEn, selectedSize, selectedGrade, estimate]);
 
   return (
-    <div
-      className="
-        fixed inset-0 z-50 bg-black/50 
-        flex justify-center items-start sm:items-center 
-        overflow-y-auto
-        p-4
-      "
-    >
-      {/* ✅ max-h + internal scroll so it doesn't get cropped on laptop */}
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-start sm:items-center overflow-y-auto p-4">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 shadow-2xl">
         <div className="flex flex-col md:flex-row">
-          {/* Product Images */}
-          <div className="md:w-1/2 p-6 rounded-b-lg md:rounded-tr-lg md:rounded-br-lg">
+          {/* Images */}
+          <div className="md:w-1/2 p-6">
             <div className="relative mb-4">
-              {/* main image, no cropping */}
-              <div className="w-full h-64 md:h-80 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+              <div className="w-full h-64 md:h-80 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
                 <img
                   src={images[selectedImage]}
-                  alt={product.name}
+                  alt={title}
                   className="max-w-full max-h-full object-contain"
                 />
               </div>
 
-              {/* ✅ Left / Right arrows */}
               {images.length > 1 && (
                 <>
                   <button
                     type="button"
                     onClick={handlePrevImage}
-                    className="
-                      absolute left-2 top-1/2 -translate-y-1/2 
-                      h-9 w-9 rounded-full bg-white/90 
-                      flex items-center justify-center shadow 
-                      hover:bg-white transition
-                    "
+                    className="absolute left-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white transition"
                   >
-                    <svg
-                      className="w-4 h-4 text-gray-700"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 19l-7-7 7-7"
-                      />
+                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleNextImage}
-                    className="
-                      absolute right-2 top-1/2 -translate-y-1/2 
-                      h-9 w-9 rounded-full bg-white/90 
-                      flex items-center justify-center shadow 
-                      hover:bg-white transition
-                    "
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-white transition"
                   >
-                    <svg
-                      className="w-4 h-4 text-gray-700"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
+                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
                 </>
               )}
             </div>
 
-            {/* Thumbnails */}
             {images.length > 1 && (
               <div className="flex gap-2">
                 {images.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`
-                      w-16 h-16 border-2 rounded-lg overflow-hidden 
-                      ${
-                        selectedImage === index
-                          ? "border-[#3D84A7]"
-                          : "border-gray-300"
-                      }
-                    `}
+                    className={`w-16 h-16 border-2 rounded-xl overflow-hidden ${
+                      selectedImage === index ? "border-[#3D84A7]" : "border-slate-200"
+                    }`}
                   >
-                    <img
-                      src={img}
-                      alt={`${product.name} view ${index + 1}`}
-                      className="w-full h-full object-contain bg-gray-100"
-                    />
+                    <img src={img} alt={`${title} view ${index + 1}`} className="w-full h-full object-contain bg-slate-100" />
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Product Info */}
-          <div className="md:w-1/2 p-6 rounded-b-lg md:rounded-tr-lg md:rounded-br-lg">
+          {/* Info */}
+          <div className="md:w-1/2 p-6">
             <div className="flex justify-between items-start mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">
-                {product.nameBn || product.name}
-              </h2>
-              <button
-                onClick={onClose}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+              <div>
+                <h2 className="text-2xl font-extrabold text-slate-900">{title}</h2>
+                {titleEn ? <div className="text-sm text-slate-500 mt-0.5">{titleEn}</div> : null}
+              </div>
+
+              <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="mb-4">
-              <span className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full font-medium capitalize">
-                {product.category}
-              </span>
-            </div>
-
-            <p className="text-3xl font-bold text-gray-800 mb-6">
-              Tk {product.price}
-            </p>
-
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-800 mb-2">
-                Description
-              </h3>
-              <p className="text-gray-600">
-                Fresh {product.nameEn || product.name} sourced carefully.
-                Premium quality, cleaned and prepared for home cooking.
-                Delivered fresh to your doorstep.
-              </p>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-800 mb-2">
-                Details
-              </h3>
-              <ul className="text-gray-600 space-y-1 text-sm">
-                <li>• Weight: {product.weight || product.unit}</li>
-                <li>• Category: {product.category}</li>
-                <li>• Freshness: Guaranteed fresh</li>
-                <li>• Delivery: Inside Dhaka (slots depend on schedule)</li>
-              </ul>
-            </div>
-
-            {/* Quantity Selector */}
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-lg font-semibold text-gray-800">
-                Quantity:
-              </span>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={decrementQuantity}
-                  className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M20 12H4"
-                    />
-                  </svg>
-                </button>
-                <span className="w-12 text-center text-xl font-semibold">
-                  {quantity}
-                </span>
-                <button
-                  onClick={incrementQuantity}
-                  className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </button>
+            {/* Estimate card */}
+            <div className="mb-5 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+              <div className="text-xs text-slate-600">{displayLine.title}</div>
+              <div className="text-3xl font-extrabold text-[#3D84A7] mt-1">
+                {formatMoney(estimate)}
               </div>
+              <div className="text-xs text-slate-500 mt-2">{displayLine.sub}</div>
+              <div className="text-[11px] text-slate-500 mt-2">{displayLine.hint}</div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Selector block */}
+            {model === "WHOLE_BY_SIZE_COUNT" && (
+              <div className="mb-6">
+                <div className="font-semibold text-slate-900 mb-2">Select size</div>
+                <select
+                  value={sizeKey}
+                  onChange={(e) => setSizeKey(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white"
+                >
+                  {sizeOptions.map((s) => (
+                    <option key={s.sizeKey} value={s.sizeKey}>
+                      {(s?.label?.bn || s?.label?.en || s.sizeKey)} — ৳{s.pricePerKg}/kg
+                    </option>
+                  ))}
+                </select>
+
+                <div className="flex items-center justify-between mt-4">
+                  <span className="text-sm font-semibold text-slate-900">Fish count</span>
+
+                  <div className="flex items-center rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={decrementCount}
+                      className="w-10 h-10 grid place-items-center text-slate-700 hover:bg-slate-200 transition"
+                    >
+                      −
+                    </button>
+                    <div className="px-4 text-sm font-bold text-slate-900 tabular-nums">
+                      {count}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={incrementCount}
+                      className="w-10 h-10 grid place-items-center text-slate-700 hover:bg-slate-200 transition"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(model === "KG_SIMPLE" || model === "KG_BY_GRADE" || model === "LEGACY") && (
+              <div className="mb-6">
+                {model === "KG_BY_GRADE" && (
+                  <>
+                    <div className="font-semibold text-slate-900 mb-2">Select grade</div>
+                    <select
+                      value={gradeKey}
+                      onChange={(e) => setGradeKey(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white"
+                    >
+                      {gradeOptions.map((g) => {
+                        const key = g.gradeKey || g.sizeKey;
+                        return (
+                          <option key={key} value={key}>
+                            {(g?.label?.bn || g?.label?.en || key)} — ৳{g.pricePerKg}/kg
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </>
+                )}
+
+                <div className="flex items-center justify-between mt-4">
+                  <span className="text-sm font-semibold text-slate-900">Quantity (kg)</span>
+
+                  <div className="flex items-center rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={decrementKg}
+                      className="w-10 h-10 grid place-items-center text-slate-700 hover:bg-slate-200 transition"
+                    >
+                      −
+                    </button>
+                    <div className="px-4 text-sm font-bold text-slate-900 tabular-nums">
+                      {formatQty(kg)}
+                      <span className="ml-1 text-slate-500 font-medium">kg</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={incrementKg}
+                      className="w-10 h-10 grid place-items-center text-slate-700 hover:bg-slate-200 transition"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {model === "KG_BY_GRADE" && (
+                  <div className="text-[11px] text-slate-500 mt-2">Step: 0.5kg</div>
+                )}
+              </div>
+            )}
+            {nutritionEntries.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Nutrition (per 100g)
+                  </h3>
+                  <span className="text-[11px] text-slate-500">Approx.</span>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-[1fr_auto_1fr_auto] gap-x-5 gap-y-3 text-sm">
+                    {nutritionEntries.map(([k, v]) => (
+                      <React.Fragment key={k}>
+                        <div className="font-semibold text-slate-700">{k}</div>
+                        <div className="text-right text-slate-600 tabular-nums">{v}</div>
+                      </React.Fragment>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-slate-200 text-[11px] text-slate-500">
+                    Note: Values may vary depending on fish size and season.
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {/* Action buttons */}
             <div className="flex gap-3">
               <button
                 onClick={handleAddToCart}
-                className="flex-1 bg-[#3D84A7] text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-[#46CDCF] transition duration-300 flex items-center justify-center gap-2"
+                className="flex-1 bg-[#3D84A7] text-white font-semibold px-6 py-3 rounded-xl shadow hover:bg-[#46CDCF] transition"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
                 Add to Cart
               </button>
 
               <a
-                href={`https://wa.me/+8801521493443?text=${encodeURIComponent(
-                  `Hello! I'd like to order ${quantity} ${product.nameEn || product.name} (${product.weight || product.unit}).`
-                )}`}
+                href={`https://wa.me/+8801521493443?text=${encodeURIComponent(whatsappText)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 bg-[#25D366] text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-[#1ebe5b] transition duration-300 flex items-center justify-center gap-2"
+                className="flex-1 bg-[#25D366] text-white font-semibold px-6 py-3 rounded-xl shadow hover:bg-[#1ebe5b] transition text-center"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.495 3.09" />
-                </svg>
                 Buy Now
               </a>
+            </div>
+
+            <div className="text-[11px] text-slate-500 mt-3">
+              Note: This is an estimated price for your convenience. Final payable amount will be confirmed by our agent.
             </div>
           </div>
         </div>

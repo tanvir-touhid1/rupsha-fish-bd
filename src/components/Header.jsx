@@ -1,7 +1,10 @@
 // components/Header.jsx
 import React, { useState, useEffect } from "react";
+import { useLang } from "../context/LangContext.jsx";
 
-const Header = ({ cartCount }) => {
+const Header = ({ cartCount, onOpenCart }) => {
+  const { lang, setLang } = useLang();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [animateCart, setAnimateCart] = useState(false);
   const [prevCartCount, setPrevCartCount] = useState(0);
@@ -24,10 +27,36 @@ const Header = ({ cartCount }) => {
 
   const cartLabel =
     cartCount === 0
-      ? "Cart"
+      ? lang === "bn"
+        ? "কার্ট"
+        : "Cart"
       : cartCount === 1
-      ? "1 item in cart"
+      ? lang === "bn"
+        ? "কার্টে ১টি আইটেম"
+        : "1 item in cart"
+      : lang === "bn"
+      ? `কার্টে ${cartCount}টি আইটেম`
       : `${cartCount} items in cart`;
+
+  const labelHome = lang === "bn" ? "হোম" : "Home";
+  const labelProducts = lang === "bn" ? "পণ্যসমূহ" : "Products";
+  const labelCart = lang === "bn" ? "কার্ট" : "Cart";
+
+  const contactLineDesktop =
+    lang === "bn"
+      ? "আমাদের যেকোন পণ্য অর্ডার করতে কল বা WhatsApp:"
+      : "To order any product, call or WhatsApp:";
+
+  const hotlineLabel = lang === "bn" ? "হটলাইন:" : "Hotline:";
+
+  const toggleLang = () => setLang(lang === "bn" ? "en" : "bn");
+
+  // Language button styles
+  const pillBase =
+    "px-3 py-1 rounded-full text-sm font-semibold border transition-all duration-200";
+  const pillActive = "bg-[#3D84A7] text-white border-[#3D84A7]";
+  const pillIdle =
+    "bg-white text-gray-700 border-gray-200 hover:border-[#3D84A7] hover:text-[#3D84A7]";
 
   return (
     <>
@@ -44,9 +73,7 @@ const Header = ({ cartCount }) => {
               >
                 <path d="M19.95 21q-3.125 0-6.175-1.362t-5.55-3.863q-2.5-2.5-3.862-5.55T3 4.05q0-.45.3-.75t.75-.3H8.1q.35 0 .625.238t.325.562l.65 3.5q.05.4-.025.675T9.4 8.45L6.975 10.9q.5.925 1.187 1.787t1.513 1.663q.775.775 1.625 1.438T13.1 17l2.35-2.35q.225-.225.588-.337t.712-.063l3.45.7q.35.1.575.363T21 15.9v4.05q0 .45-.3.75t-.75.3Z" />
               </svg>
-              <span className="whitespace-nowrap">
-                আমাদের যেকোন পণ্য অর্ডার করতে কল বা WhatsApp:
-              </span>
+              <span className="whitespace-nowrap">{contactLineDesktop}</span>
               <a
                 href="tel:+8801521493443"
                 className="font-bold hover:text-[#ABEDD8] transition-colors whitespace-nowrap"
@@ -65,7 +92,7 @@ const Header = ({ cartCount }) => {
               >
                 <path d="M4.05 21q-.45 0-.75-.3t-.3-.75V15.9q0-.35.225-.613t.575-.362l3.45-.7q.35-.05.713.063t.587.337L10.9 17q.8-.775 1.625-1.438T14.1 14.35q.775-.775 1.438-1.6T17 10.9l-2.35-2.35q-.225-.225-.338-.588t-.062-.712l.7-3.45q.1-.35.363-.575T15.9 3h4.05q.45 0 .75.3t.3.75q0 3.1-1.363 6.15t-3.862 5.55q-2.5 2.5-5.55 3.863T4.05 21Z" />
               </svg>
-              <span className="whitespace-nowrap">হটলাইন:</span>
+              <span className="whitespace-nowrap">{hotlineLabel}</span>
               <a
                 href="tel:09642922922"
                 className="font-bold hover:text-[#ABEDD8] transition-colors whitespace-nowrap"
@@ -78,7 +105,9 @@ const Header = ({ cartCount }) => {
           {/* Mobile Layout – compact single-line style */}
           <div className="sm:hidden text-[11px] leading-tight text-center px-2 py-1 flex items-center justify-center">
             <p className="text-white whitespace-normal">
-              আমাদের যে কোন পণ্য অর্ডার করতে কল বা WhatsApp করুন:
+              {lang === "bn"
+                ? "আমাদের যে কোন পণ্য অর্ডার করতে কল বা WhatsApp করুন:"
+                : "To order any product, call or WhatsApp:"}
               <a
                 href="tel:+8801521493443"
                 className="font-semibold mx-1 hover:text-[#ABEDD8]"
@@ -86,7 +115,7 @@ const Header = ({ cartCount }) => {
                 +8801521493443
               </a>
               |
-              <span className="mx-1">হট লাইন:</span>
+              <span className="mx-1">{lang === "bn" ? "হট লাইন:" : "Hotline:"}</span>
               <a
                 href="tel:09642922922"
                 className="font-semibold hover:text-[#ABEDD8]"
@@ -117,30 +146,54 @@ const Header = ({ cartCount }) => {
                 href="#home"
                 className="text-gray-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
               >
-                Home
+                {labelHome}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#3D84A7] transition-all duration-200 group-hover:w-full" />
               </a>
               <a
                 href="#products-section"
                 className="text-gray-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
               >
-                Products
+                {labelProducts}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#3D84A7] transition-all duration-200 group-hover:w-full" />
               </a>
-              <a
-                href="#cart-section"
+              <button
+                type="button"
+                onClick={onOpenCart}
                 className="text-gray-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
               >
-                Cart
+
+                {labelCart}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#3D84A7] transition-all duration-200 group-hover:w-full" />
-              </a>
+              </button>
             </nav>
 
-            {/* Desktop: Cart only (primary action) */}
+            {/* Desktop: language + cart */}
             <div className="hidden md:flex items-center gap-3">
-              <a
-                href="#cart-section"
+              {/* Language pills */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLang("bn")}
+                  className={`${pillBase} ${lang === "bn" ? pillActive : pillIdle}`}
+                  aria-pressed={lang === "bn"}
+                >
+                  বাংলা
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLang("en")}
+                  className={`${pillBase} ${lang === "en" ? pillActive : pillIdle}`}
+                  aria-pressed={lang === "en"}
+                >
+                  EN
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={onOpenCart}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-all duration-300 group"
+                aria-label={cartLabel}
               >
                 <svg
                   className="w-5 h-5 group-hover:scale-110 transition-transform"
@@ -165,16 +218,29 @@ const Header = ({ cartCount }) => {
                 )}
 
                 <span className="text-sm text-gray-600">{cartLabel}</span>
-              </a>
+              </button>
+
             </div>
 
-            {/* Mobile: cart + menu */}
-            <div className="flex items-center gap-4 md:hidden">
+            {/* Mobile: language toggle + cart + menu */}
+            <div className="flex items-center gap-2 md:hidden">
+              {/* Mobile language toggle */}
+              <button
+                type="button"
+                onClick={toggleLang}
+                className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors"
+                aria-label={lang === "bn" ? "Switch to English" : "বাংলায় পরিবর্তন করুন"}
+              >
+                {lang === "bn" ? "EN" : "বাংলা"}
+              </button>
+
               {/* Mobile Cart Icon */}
               {cartCount > 0 && (
-                <a
-                  href="#cart-section"
+                <button
+                  type="button"
+                  onClick={onOpenCart}
                   className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-300 group"
+                  aria-label={cartLabel}
                 >
                   <svg
                     className="w-6 h-6 group-hover:scale-110 transition-transform"
@@ -197,13 +263,15 @@ const Header = ({ cartCount }) => {
                   >
                     {cartCount}
                   </span>
-                </a>
+                </button>
               )}
+
 
               {/* Mobile Menu Button */}
               <button
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
+                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               >
                 <svg
                   className="w-6 h-6"
@@ -236,21 +304,26 @@ const Header = ({ cartCount }) => {
                 className="text-gray-700 hover:text-[#3D84A7] font-medium py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Home
+                {labelHome}
               </a>
               <a
                 href="#products-section"
                 className="text-gray-700 hover:text-[#3D84A7] font-medium py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Products
+                {labelProducts}
               </a>
               <a
                 href="#cart-section"
                 className="text-gray-700 hover:text-[#3D84A7] font-medium py-2 flex items-center gap-2"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsMenuOpen(false);
+                  onOpenCart?.();
+                }}
+
               >
-                Cart
+                {labelCart}
                 {cartCount > 0 && (
                   <span
                     className={`bg-gradient-to-br from-red-500 to-red-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] h-5 flex items-center justify-center font-bold shadow-md transition-all duration-300 ${getCounterAnimation()}`}
@@ -259,6 +332,37 @@ const Header = ({ cartCount }) => {
                   </span>
                 )}
               </a>
+
+              {/* Mobile menu language pills */}
+              <div className="pt-2 border-t border-gray-100">
+                <div className="text-xs text-gray-500 mb-2">
+                  {lang === "bn" ? "ভাষা নির্বাচন" : "Language"}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLang("bn");
+                      setIsMenuOpen(false);
+                    }}
+                    className={`${pillBase} ${lang === "bn" ? pillActive : pillIdle}`}
+                    aria-pressed={lang === "bn"}
+                  >
+                    বাংলা
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLang("en");
+                      setIsMenuOpen(false);
+                    }}
+                    className={`${pillBase} ${lang === "en" ? pillActive : pillIdle}`}
+                    aria-pressed={lang === "en"}
+                  >
+                    EN
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

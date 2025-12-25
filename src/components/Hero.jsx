@@ -1,8 +1,47 @@
-// components/Hero.jsx
-import React, { useState, useEffect } from "react";
+// src/components/Hero.jsx
+import React, { useState, useEffect, useMemo } from "react";
 import { products } from "../data/products.js";
+import { useLang } from "../context/LangContext.jsx";
 
 const highlightSlugs = ["ilish", "boal", "pangas"];
+
+// ---------- Mixed-schema helpers ----------
+const pickText = (value, lang = "bn") => {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value?.[lang] || value?.bn || value?.en || "";
+  }
+  if (typeof value === "string") return value;
+  return "";
+};
+
+const getTitleBn = (p) => p?.title?.bn || p?.nameBn || p?.name || "";
+const getTitleEn = (p) => p?.title?.en || p?.nameEn || "";
+
+const getDisplayTitle = (p, lang) => {
+  const bn = getTitleBn(p);
+  const en = getTitleEn(p);
+  return lang === "en" ? (en || bn) : (bn || en);
+};
+
+const getPriceNote = (p, lang) =>
+  pickText(p?.priceNote, lang) ||
+  (lang === "bn" ? p?.priceNoteBn || "" : p?.priceNoteEn || "");
+
+// ✅ null-safe price range formatting (works with 0/null correctly)
+const formatPriceRange = (product, lang = "bn") => {
+  const unit = product?.unit || product?.weight || "kg";
+
+  const hasRange =
+    product?.priceMin != null &&
+    product?.priceMax != null &&
+    product?.priceMin !== product?.priceMax;
+
+  const base = product?.priceMin ?? product?.price ?? 0;
+
+  if (hasRange) return `৳${product.priceMin}–${product.priceMax}/${unit}`;
+  if (base > 0) return `৳${base}/${unit}`;
+  return lang === "bn" ? "দাম জানতে কল করুন" : "Call for price";
+};
 
 const pickHighlights = () => {
   const selected = products.filter((p) => highlightSlugs.includes(p.slug));
@@ -10,25 +49,11 @@ const pickHighlights = () => {
   return products.slice(0, 3);
 };
 
-const formatPriceRange = (product) => {
-  const unit = product.unit || product.weight || "kg";
-  if (
-    product.priceMin &&
-    product.priceMax &&
-    product.priceMin !== product.priceMax
-  ) {
-    return `৳${product.priceMin}–${product.priceMax}/${unit}`;
-  }
-  const base = product.priceMin ?? product.price;
-  if (base && base > 0) {
-    return `৳${base}/${unit}`;
-  }
-  return "দাম জানতে কল করুন";
-};
-
 const Hero = () => {
+  const { lang } = useLang();
   const [isVisible, setIsVisible] = useState(false);
-  const highlightItems = pickHighlights();
+
+  const highlightItems = useMemo(() => pickHighlights(), []);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
@@ -37,9 +62,7 @@ const Hero = () => {
 
   const scrollToProducts = () => {
     const section = document.getElementById("products-section");
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth" });
-    }
+    if (section) section.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -57,9 +80,8 @@ const Hero = () => {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          {/* LEFT: Text / main message */}
+          {/* LEFT */}
           <div>
-            {/* Small badge */}
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-[11px] md:text-xs border border-white/20 mb-4">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="uppercase tracking-wide">
@@ -73,13 +95,12 @@ const Hero = () => {
             </h1>
 
             <p className="text-sm md:text-base text-white/90 max-w-xl mb-6">
-              Rupsha Fish collects premium fish directly from rivers and the
-              sea – no farm fish. Every order is cleaned, hygienically packed,
-              and delivered with care so your family can enjoy authentic
+              Rupsha Fish collects premium fish directly from rivers and the sea
+              – no farm fish. Every order is cleaned, hygienically packed, and
+              delivered with care so your family can enjoy authentic
               Bangladeshi taste at home.
             </p>
 
-            {/* CTAs */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
               <button
                 onClick={scrollToProducts}
@@ -91,8 +112,7 @@ const Hero = () => {
                   transition-all
                 "
               >
-                Browse Fresh Fish
-                <span className="ml-2 text-lg">🛒</span>
+                Browse Fresh Fish <span className="ml-2 text-lg">🛒</span>
               </button>
 
               <a
@@ -111,13 +131,10 @@ const Hero = () => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                 </span>
-
                 Order via WhatsApp
               </a>
-
             </div>
 
-            {/* Trust badges */}
             <div className="flex flex-wrap gap-3 text-xs md:text-sm text-white/90">
               <div className="flex items-center gap-2">
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/10">
@@ -140,7 +157,7 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* RIGHT: Professional card / highlights */}
+          {/* RIGHT */}
           <div className="relative mt-4 md:mt-0">
             <div className="absolute -top-10 -right-6 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
 
@@ -155,33 +172,42 @@ const Hero = () => {
               </div>
 
               <div className="space-y-3 text-sm">
-                {highlightItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-3"
-                  >
-                    <div>
-                      <div className="font-semibold">
-                        {item.nameBn || item.name}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {item.badges?.includes("Premium")
-                          ? "Premium cut, cleaned & ready"
-                          : "Freshly sourced, cleaned & packed"}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">
-                        {formatPriceRange(item)}
-                      </div>
-                      {item.priceNoteBn && (
-                        <div className="text-[11px] text-emerald-600">
-                          সাইজ অনুযায়ী দাম নির্ভরশীল
+                {highlightItems.map((item) => {
+                  const title = getDisplayTitle(item, lang);
+                  const note = getPriceNote(item, lang);
+                  const isPremium = Array.isArray(item?.badges)
+                    ? item.badges.includes("Premium")
+                    : false;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-semibold truncate">{title}</div>
+                        <div className="text-xs text-gray-500">
+                          {isPremium
+                            ? "Premium cut, cleaned & ready"
+                            : "Freshly sourced, cleaned & packed"}
                         </div>
-                      )}
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <div className="font-semibold">
+                          {formatPriceRange(item, lang)}
+                        </div>
+
+                        {/* ✅ show the real note (supports new + old) */}
+                        {note ? (
+                          <div className="text-[11px] text-emerald-600 line-clamp-1">
+                            {note}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">

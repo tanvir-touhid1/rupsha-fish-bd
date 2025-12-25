@@ -1,40 +1,48 @@
 // components/Cart.jsx
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import OrderFormModal from "./OrderFormModal.jsx";
 
 const FREE_DELIVERY_THRESHOLD = 1000; // Tk
-const BASE_DELIVERY_FEE = 60; // Tk (change if needed)
+const BASE_DELIVERY_FEE = 60; // Tk
+
+const isWholeFish = (item) => item?.pricingModel === "WHOLE_BY_SIZE_COUNT";
+const isGradeKg = (item) => item?.pricingModel === "KG_BY_GRADE";
+
+const formatQty = (n) => {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "1";
+  if (Number.isInteger(x)) return String(x);
+  return x.toFixed(1).replace(/0+$/, "").replace(/\.$/, "");
+};
+const to1 = (x) => Math.round(Number(x) * 10) / 10;
+
 
 const Cart = ({
   cartItems,
   removeFromCart,
   clearCart,
-  subtotal,
-  onUpdateQuantity,
+  subtotal, // should be computed from item.totalPrice in App; still supported if passed
+  onUpdateQuantity, // expects (index, newValue) where newValue = count or kg
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
   const toggleCart = () => setIsOpen(!isOpen);
 
-  // helper: format quantity nicely (1 or 1.5)
-  const formatQty = (q) => (Number.isInteger(q) ? q : q.toFixed(1));
+  // Badge-like text inside cart header (not global header badge)
+  const totalItemsLabel = useMemo(() => {
+    // Option A rule: fish count + number of kg lines
+    const total = cartItems.reduce((sum, it) => {
+      if (isWholeFish(it)) return sum + (Number(it.count) || 1);
+      return sum + 1;
+    }, 0);
+    return String(total);
+  }, [cartItems]);
 
-  // Total items in cart (kg-based)
-  const totalItems = cartItems.reduce(
-    (sum, item) => sum + (item.cartQuantity || 1),
-    0
-  );
-
-  // Estimated subtotal
   const estimatedSubtotal =
     typeof subtotal === "number"
       ? subtotal
-      : cartItems.reduce((sum, item) => {
-          const qty = item.cartQuantity || 1;
-          const basePrice = item.priceMin ?? item.price ?? 0;
-          return sum + basePrice * qty;
-        }, 0);
+      : cartItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
 
   const deliveryFee =
     estimatedSubtotal === 0 || estimatedSubtotal >= FREE_DELIVERY_THRESHOLD
@@ -43,34 +51,64 @@ const Cart = ({
 
   const estimatedTotal = estimatedSubtotal + deliveryFee;
 
-  // Quantity change helpers (0.5 kg step, min 0.5kg)
+  // Quantity change helpers (model-aware)
   const handleDecrease = (index) => {
     if (!onUpdateQuantity) return;
-    const current = cartItems[index]?.cartQuantity || 1;
-    const next = Math.max(0.5, current - 0.5);
-    onUpdateQuantity(index, Number(next.toFixed(1)));
+    const item = cartItems[index];
+    if (!item) return;
+
+    if (isWholeFish(item)) {
+      const current = Number(item.count) || 1;
+      const next = Math.max(1, current - 1);
+      onUpdateQuantity(index, next);
+      return;
+    }
+
+    const step = isGradeKg(item) ? 0.5 : 1;
+    const current = Number(item.kg) || 1;
+    const next = Math.max(1, to1(current - step));
+    onUpdateQuantity(index, next);
   };
 
   const handleIncrease = (index) => {
     if (!onUpdateQuantity) return;
-    const current = cartItems[index]?.cartQuantity || 1;
-    const next = current + 0.5;
-    onUpdateQuantity(index, Number(next.toFixed(1)));
+    const item = cartItems[index];
+    if (!item) return;
+
+    if (isWholeFish(item)) {
+      const current = Number(item.count) || 1;
+      const next = current + 1;
+      onUpdateQuantity(index, next);
+      return;
+    }
+
+    const step = isGradeKg(item) ? 0.5 : 1;
+    const current = Number(item.kg) || 1;
+    const next = to1(current + step);
+    onUpdateQuantity(index, next);
   };
 
-  // WhatsApp summary
+  // WhatsApp summary (estimate)
   const whatsappMessage = (() => {
     if (!cartItems.length) {
       return `I would like to place an order from Rupsha Fish. Please share available items and prices.`;
     }
 
     const lines = cartItems.map((item) => {
-      const qty = item.cartQuantity || 1;
-      const basePrice = item.priceMin ?? item.price ?? 0;
-      const approx =
-        basePrice > 0 ? `~৳${(basePrice * qty).toFixed(0)}` : "price to confirm";
+      const name = item.nameBn || item.name || "Item";
+      const approx = Number(item.totalPrice) ? `~৳${Math.round(item.totalPrice)}` : "price to confirm";
 
-      return `• ${item.nameBn || item.name} – ${formatQty(qty)}kg (${approx})`;
+      if (isWholeFish(item)) {
+        const c = Number(item.count) || 1;
+        const sizeLabel = item.selectedSizeLabel || item.selectedSizeKey;
+        const size = sizeLabel ? ` (Size: ${sizeLabel})` : "";
+        return `• ${name}${size} – ${c} fish (${approx})`;
+      }
+
+      const k = Number(item.kg) || 1;
+      const gradeLabel = item.selectedGradeLabel || item.selectedGradeKey;
+      const grade = gradeLabel ? ` (Grade: ${gradeLabel})` : "";
+      return `• ${name}${grade} – ${formatQty(k)}kg (${approx})`;
     });
 
     const deliveryText =
@@ -81,10 +119,10 @@ const Cart = ({
     return (
       `*Rupsha Fish Order (Estimate)*\n\n` +
       `${lines.join("\n")}\n\n` +
-      `Estimated subtotal: ৳${estimatedSubtotal.toFixed(0)}\n` +
+      `Estimated subtotal: ৳${Math.round(estimatedSubtotal)}\n` +
       `Delivery: ${deliveryText}\n` +
-      `Estimated total: ৳${estimatedTotal.toFixed(0)}\n\n` +
-      `*Note:* Final price confirmed after weighing the fish.\n\n` +
+      `Estimated total: ৳${Math.round(estimatedTotal)}\n\n` +
+      `*Note:* Final price confirmed after weighing/size check on call.\n\n` +
       `Please provide:\n` +
       `• Name\n• Mobile number\n• Delivery address\n• Preferred time (morning/evening)`
     );
@@ -106,26 +144,25 @@ const Cart = ({
   return (
     <>
       <div className="bg-white border border-gray-200 rounded-xl shadow-md overflow-hidden">
-        {/* HEADER (Collapsible Button) */}
+        {/* HEADER */}
         <button
           onClick={toggleCart}
           className="w-full flex items-center justify-between px-4 py-3 bg-gray-100 border-b border-gray-200"
         >
           <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            🛒 My Cart ({formatQty(totalItems)} kg)
+            🛒 My Cart ({totalItemsLabel})
           </h2>
           <span className="text-xl text-gray-600">{isOpen ? "−" : "+"}</span>
         </button>
 
-        {/* COLLAPSIBLE BODY */}
         {isOpen && (
           <div className="p-4">
             <div className="flex flex-col lg:flex-row gap-6">
-              {/* Cart Items */}
+              {/* Items */}
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-gray-800">
-                    Shopping Cart ({formatQty(totalItems)} kg)
+                    Shopping Cart ({totalItemsLabel})
                   </h2>
 
                   {cartItems.length > 0 && (
@@ -145,19 +182,35 @@ const Cart = ({
                 ) : (
                   <div className="space-y-4">
                     {cartItems.map((item, index) => {
-                      const qty = item.cartQuantity || 1;
-                      const basePrice = item.priceMin ?? item.price ?? 0;
-                      const linePrice =
-                        basePrice > 0 ? basePrice * qty : undefined;
+                      const approx = Number(item.totalPrice) || 0;
+
+                      const qtyLabel = isWholeFish(item)
+                        ? `${Number(item.count) || 1} fish`
+                        : `${formatQty(Number(item.kg) || 1)}kg`;
+
+                      const optionText = (() => {
+                        if (isWholeFish(item)) {
+                          const label = item.selectedSizeLabel || item.selectedSizeKey;
+                          return label ? `Size: ${label}` : "";
+                        }
+                        if (isGradeKg(item)) {
+                          const label = item.selectedGradeLabel || item.selectedGradeKey;
+                          return label ? `Grade: ${label}` : "";
+                        }
+                        return "";
+                      })();
+
+
+                      const stepText = isGradeKg(item) ? "Step: 0.5kg" : "";
 
                       return (
                         <div
-                          key={index}
+                          key={item.cartKey || index}
                           className="flex items-center justify-between bg-gray-50 rounded-lg p-3"
                         >
                           <div className="flex items-center gap-3">
                             <img
-                              src={item.image}
+                              src={item.image || "/images/fallback-fish.jpg"}
                               alt={item.name}
                               className="w-14 h-14 rounded-md object-cover"
                             />
@@ -166,7 +219,13 @@ const Cart = ({
                                 {item.nameBn || item.name}
                               </h3>
 
-                              {/* Quantity control + approx price */}
+                              {optionText && (
+                                <div className="text-[11px] text-gray-500">
+                                  {optionText}
+                                </div>
+                              )}
+
+                              {/* Qty control + approx price */}
                               <div className="mt-1 flex items-center gap-2">
                                 <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1 border border-gray-200">
                                   <button
@@ -175,9 +234,11 @@ const Cart = ({
                                   >
                                     −
                                   </button>
+
                                   <span className="text-xs font-medium text-gray-800">
-                                    {formatQty(qty)}kg
+                                    {qtyLabel}
                                   </span>
+
                                   <button
                                     onClick={() => handleIncrease(index)}
                                     className="text-gray-600 font-bold text-lg"
@@ -186,12 +247,16 @@ const Cart = ({
                                   </button>
                                 </div>
 
-                                {linePrice && (
-                                  <span className="text-[11px] text-gray-500">
-                                    Approx: ৳{linePrice.toFixed(0)}
-                                  </span>
-                                )}
+                                <span className="text-[11px] text-gray-500">
+                                  Approx: ৳{Math.round(approx)}
+                                </span>
                               </div>
+
+                              {stepText && (
+                                <div className="text-[10px] text-gray-400 mt-1">
+                                  {stepText}
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -208,7 +273,7 @@ const Cart = ({
                 )}
               </div>
 
-              {/* Summary + Checkout Options */}
+              {/* Summary */}
               <div className="w-full lg:w-80">
                 <div className="bg-gray-50 rounded-xl border border-gray-200 p-5">
                   <h3 className="text-lg font-semibold mb-4 text-gray-800">
@@ -217,11 +282,9 @@ const Cart = ({
 
                   <div className="space-y-2 text-sm mb-4">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">
-                        Subtotal (estimate)
-                      </span>
+                      <span className="text-gray-600">Subtotal (estimate)</span>
                       <span className="font-semibold">
-                        ৳{estimatedSubtotal.toFixed(0)}
+                        ৳{Math.round(estimatedSubtotal)}
                       </span>
                     </div>
 
@@ -243,14 +306,13 @@ const Cart = ({
                         Total (estimate)
                       </span>
                       <span className="font-bold text-[#3D84A7]">
-                        ৳{estimatedTotal.toFixed(0)}
+                        ৳{Math.round(estimatedTotal)}
                       </span>
                     </div>
                   </div>
 
                   <p className="text-[11px] text-gray-500 mb-3">
-                    Final price depends on weight/size. Our team will confirm
-                    before delivery.
+                    Final price depends on size/weight. Our team will confirm on call.
                   </p>
 
                   {/* OPTION 1 */}
@@ -275,7 +337,7 @@ const Cart = ({
                     </button>
                   </div>
 
-                  {/* OR DIVIDER */}
+                  {/* OR */}
                   <div className="flex items-center my-2">
                     <div className="flex-1 h-px bg-gray-300" />
                     <span className="px-2 text-[10px] uppercase tracking-wide text-gray-400 font-semibold">
@@ -307,8 +369,7 @@ const Cart = ({
                   </div>
 
                   <p className="mt-3 text-center text-[10px] text-gray-500">
-                    Choose <span className="font-semibold">any one</span> option
-                    above to confirm your order.
+                    Choose <span className="font-semibold">any one</span> option above.
                   </p>
 
                   <div className="mt-2 text-center text-xs text-gray-500">

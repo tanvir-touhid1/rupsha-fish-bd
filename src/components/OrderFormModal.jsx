@@ -1,6 +1,20 @@
 // components/OrderFormModal.jsx
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import emailjs from "@emailjs/browser";
+
+const FREE_DELIVERY_THRESHOLD = 1000;
+
+const isWholeFish = (item) => item?.pricingModel === "WHOLE_BY_SIZE_COUNT";
+const isGradeKg = (item) => item?.pricingModel === "KG_BY_GRADE";
+
+const formatQty = (n) => {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "1";
+  if (Number.isInteger(x)) return String(x);
+  return x.toFixed(1).replace(/0+$/, "").replace(/\.$/, "");
+};
+
+const money = (n) => `৳${Math.round(Number(n) || 0)}`;
 
 const OrderFormModal = ({
   isOpen,
@@ -11,8 +25,6 @@ const OrderFormModal = ({
   onOrderSuccess,
   onOrderError,
 }) => {
-  if (!isOpen) return null;
-
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -23,26 +35,53 @@ const OrderFormModal = ({
   const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
   const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-  const finalTotal = estimatedSubtotal + deliveryFee;
-  const formatQty = (q) => (Number.isInteger(q) ? q : q.toFixed(1));
+  const finalTotal = (Number(estimatedSubtotal) || 0) + (Number(deliveryFee) || 0);
 
-  const orderSummary = cartItems
-    .map((item) => {
-      const qty = item.cartQuantity || 1;
-      const basePrice = item.priceMin ?? item.price ?? 0;
-      const approx =
-        basePrice > 0
-          ? `~৳${(basePrice * qty).toFixed(0)}`
+  // Option A count metric: fish count + kg-line count
+  const totalItemsMetric = useMemo(() => {
+    return cartItems.reduce((sum, it) => {
+      if (isWholeFish(it)) return sum + (Number(it.count) || 1);
+      return sum + 1;
+    }, 0);
+  }, [cartItems]);
+
+  const orderSummary = useMemo(() => {
+    return cartItems
+      .map((item) => {
+        const name = item.nameBn || item.name || "Item";
+        const approx = Number(item.totalPrice)
+          ? `~${money(item.totalPrice)}`
           : "price to confirm";
 
-      return `• ${item.nameBn || item.name} – ${formatQty(qty)}kg (${approx})`;
-    })
-    .join("\n");
+        if (isWholeFish(item)) {
+          const c = Number(item.count) || 1;
+          const sizeLabel = item.selectedSizeLabel || item.selectedSizeKey;
+          const size = sizeLabel ? ` (Size: ${sizeLabel})` : "";
+          return `• ${name}${size} – ${c} ${c > 1 ? "fish" : "fish"} (${approx})`;
+        }
 
-  const totalItemsKg = cartItems.reduce(
-    (sum, item) => sum + (item.cartQuantity || 1),
-    0
-  );
+        const k = Number(item.kg) || 1;
+        const gradeLabel = item.selectedGradeLabel || item.selectedGradeKey;
+        const grade = gradeLabel ? ` (Grade: ${gradeLabel})` : "";
+        return `• ${name}${grade} – ${formatQty(k)}kg (${approx})`;
+      })
+      .join("\n");
+  }, [cartItems]);
+
+  const headerQtyText = useMemo(() => {
+    // For display only (nice compact)
+    const fishCount = cartItems.reduce(
+      (sum, it) => sum + (isWholeFish(it) ? (Number(it.count) || 1) : 0),
+      0
+    );
+    const kgLines = cartItems.reduce((sum, it) => sum + (!isWholeFish(it) ? 1 : 0), 0);
+    const parts = [];
+    if (fishCount > 0) parts.push(`${fishCount} fish`);
+    if (kgLines > 0) parts.push(`${kgLines} kg-items`);
+    return parts.length ? parts.join(" · ") : `${cartItems.length} items`;
+  }, [cartItems]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,7 +90,6 @@ const OrderFormModal = ({
       onOrderError?.("Please fill all required fields.");
       return;
     }
-
     if (!cartItems.length) {
       onOrderError?.("Your cart is empty.");
       return;
@@ -63,22 +101,32 @@ const OrderFormModal = ({
       customer_name: customerName,
       phone,
       address,
-      // for compatibility if template still has these:
+
+      // keep existing template compatibility
       area: "",
       notes: "",
+
       order_summary: orderSummary,
-      subtotal: `৳${estimatedSubtotal.toFixed(0)}`,
-      delivery_fee:
-        deliveryFee === 0 ? "Free" : `৳${deliveryFee.toFixed(0)}`,
-      final_total: `৳${finalTotal.toFixed(0)}`,
-      total_items: totalItemsKg,
+      subtotal: money(estimatedSubtotal),
+      delivery_fee: deliveryFee === 0 ? "Free" : money(deliveryFee),
+      final_total: money(finalTotal),
+
+      // NOTE: now it's Option A metric, not kg sum
+      total_items: totalItemsMetric,
+
       coupon_code: coupon || "N/A",
+
+      // Extra fields (safe even if template ignores)
+      items_breakdown: headerQtyText,
+      pricing_note:
+        "Estimated amounts shown. Final payable will be confirmed by agent after size/weight check.",
+      free_delivery_threshold: money(FREE_DELIVERY_THRESHOLD),
     };
 
     try {
       await emailjs.send(serviceId, templateId, params, publicKey);
       onOrderSuccess?.(
-        "Order submitted successfully! We will contact you shortly to confirm weight & delivery."
+        "Order submitted successfully! We will call you shortly to confirm size/weight & delivery."
       );
       setIsSubmitting(false);
       onClose();
@@ -92,7 +140,7 @@ const OrderFormModal = ({
   };
 
   return (
-    // BACKDROP – click outside to close
+    // BACKDROP
     <div
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 px-3"
       onClick={onClose}
@@ -111,7 +159,7 @@ const OrderFormModal = ({
             </h2>
             <p className="text-xs text-gray-500 mt-1">
               Fill in your information. We will call you to confirm the order,
-              weight and delivery time.
+              size/weight and delivery time.
             </p>
           </div>
 
@@ -133,28 +181,34 @@ const OrderFormModal = ({
                 Order Summary
               </p>
               <span className="text-[11px] text-gray-500">
-                {cartItems.length} items · {formatQty(totalItemsKg)} kg
+                {cartItems.length} lines · {headerQtyText}
               </span>
             </div>
 
             <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1 text-xs">
               {cartItems.map((item, idx) => {
-                const qty = item.cartQuantity || 1;
-                const basePrice = item.priceMin ?? item.price ?? 0;
-                const linePrice =
-                  basePrice > 0 ? (basePrice * qty).toFixed(0) : null;
+                const name = item.nameBn || item.name || "Item";
+                const approx = Number(item.totalPrice) ? `~${money(item.totalPrice)}` : "price later";
 
+                if (isWholeFish(item)) {
+                  const c = Number(item.count) || 1;
+                  const sizeLabel = item.selectedSizeLabel || item.selectedSizeKey;
+                  const size = sizeLabel ? ` · Size: ${sizeLabel}` : "";
+                  return (
+                    <div key={item.cartKey || idx} className="flex justify-between text-gray-700">
+                      <span>{name} · {c} fish{size}</span>
+                      <span className="text-gray-500">{approx}</span>
+                    </div>
+                  );
+                }
+
+                const k = Number(item.kg) || 1;
+                const gradeLabel = item.selectedGradeLabel || item.selectedGradeKey;
+                const grade = gradeLabel ? ` · Grade: ${gradeLabel}` : "";
                 return (
-                  <div
-                    key={idx}
-                    className="flex justify-between text-gray-700"
-                  >
-                    <span>
-                      {item.nameBn || item.name} · {formatQty(qty)}kg
-                    </span>
-                    <span className="text-gray-500">
-                      {linePrice ? `~৳${linePrice}` : "price later"}
-                    </span>
+                  <div key={item.cartKey || idx} className="flex justify-between text-gray-700">
+                    <span>{name} · {formatQty(k)}kg{grade}</span>
+                    <span className="text-gray-500">{approx}</span>
                   </div>
                 );
               })}
@@ -163,29 +217,28 @@ const OrderFormModal = ({
             <div className="mt-3 border-t border-dashed border-gray-200 pt-2 text-xs text-gray-800 space-y-1">
               <div className="flex justify-between">
                 <span>Subtotal (estimate)</span>
-                <span className="font-medium">
-                  ৳{estimatedSubtotal.toFixed(0)}
-                </span>
+                <span className="font-medium">{money(estimatedSubtotal)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>
                   Delivery (inside Dhaka)
                   <span className="block text-[10px] text-gray-400">
-                    Free over ৳1000
+                    Free over {money(FREE_DELIVERY_THRESHOLD)}
                   </span>
                 </span>
-                <span>
-                  {deliveryFee === 0 ? "Free" : `~৳${deliveryFee.toFixed(0)}`}
-                </span>
+                <span>{deliveryFee === 0 ? "Free" : `~${money(deliveryFee)}`}</span>
               </div>
               <div className="flex justify-between pt-1 mt-1 border-t border-gray-200">
                 <span className="font-semibold text-gray-900 text-sm">
                   Total (estimate)
                 </span>
                 <span className="font-semibold text-[#3D84A7] text-sm">
-                  ৳{finalTotal.toFixed(0)}
+                  {money(finalTotal)}
                 </span>
               </div>
+              <p className="mt-2 text-[10px] text-gray-500">
+                Final payable amount will be confirmed by our agent after size/weight check.
+              </p>
             </div>
           </div>
 
@@ -283,7 +336,7 @@ const OrderFormModal = ({
               </p>
             </div>
 
-            {/* Submit + Pay Online */}
+            {/* Submit */}
             <div className="pt-2 space-y-2">
               <button
                 type="submit"
