@@ -1,13 +1,40 @@
 // components/Header.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLang } from "../context/LangContext.jsx";
 
 const Header = ({ cartCount, onOpenCart }) => {
   const { lang, setLang } = useLang();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [animateCart, setAnimateCart] = useState(false);
   const [prevCartCount, setPrevCartCount] = useState(0);
+
+  // ✅ single helper for Home/Products/Logo
+  const goToSection = useCallback(
+    (id) => {
+      setIsMenuOpen(false);
+
+      // Always navigate via router to "/#id"
+      const targetHash = `#${id}`;
+
+      // If we are already exactly on "/#id", router may not trigger updates.
+      // So we force a tiny hash flip to re-trigger App's hash effect reliably.
+      if (location.pathname === "/" && location.hash === targetHash) {
+        navigate({ pathname: "/", hash: "#_" }, { replace: true });
+        // next tick -> real hash
+        setTimeout(() => {
+          navigate({ pathname: "/", hash: targetHash }, { replace: true });
+        }, 0);
+        return;
+      }
+
+      navigate({ pathname: "/", hash: targetHash });
+    },
+    [navigate, location.pathname, location.hash]
+  );
 
   // Trigger animation when cartCount increases
   useEffect(() => {
@@ -51,7 +78,7 @@ const Header = ({ cartCount, onOpenCart }) => {
 
   const toggleLang = () => setLang(lang === "bn" ? "en" : "bn");
 
-  // Language button styles
+  // Language button styles (KEEP UI)
   const pillBase =
     "px-3 py-1 rounded-full text-sm font-semibold border transition-all duration-200";
   const pillActive = "bg-[#3D84A7] text-white border-[#3D84A7]";
@@ -115,7 +142,9 @@ const Header = ({ cartCount, onOpenCart }) => {
                 +8801521493443
               </a>
               |
-              <span className="mx-1">{lang === "bn" ? "হট লাইন:" : "Hotline:"}</span>
+              <span className="mx-1">
+                {lang === "bn" ? "হট লাইন:" : "Hotline:"}
+              </span>
               <a
                 href="tel:09642922922"
                 className="font-semibold hover:text-[#ABEDD8]"
@@ -133,35 +162,45 @@ const Header = ({ cartCount, onOpenCart }) => {
           <div className="flex justify-between items-center py-2 md:py-3">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <img
-                src="/images/logo.svg"
-                alt="Rupsha Fish"
-                className="h-12 md:h-14 w-auto transition-transform duration-200 hover:scale-105"
-              />
+              <button
+                type="button"
+                onClick={() => goToSection("home")}
+                className="inline-flex items-center"
+                aria-label="Go to home"
+              >
+                <img
+                  src="/images/logo.svg"
+                  alt="Rupsha Fish"
+                  className="h-12 md:h-14 w-auto transition-transform duration-200 hover:scale-105"
+                />
+              </button>
             </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8">
-              <a
-                href="#home"
+              <button
+                type="button"
+                onClick={() => goToSection("home")}
                 className="text-gray-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
               >
                 {labelHome}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#3D84A7] transition-all duration-200 group-hover:w-full" />
-              </a>
-              <a
-                href="#products-section"
+              </button>
+
+              <button
+                type="button"
+                onClick={() => goToSection("products-section")}
                 className="text-gray-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
               >
                 {labelProducts}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#3D84A7] transition-all duration-200 group-hover:w-full" />
-              </a>
+              </button>
+
               <button
                 type="button"
                 onClick={onOpenCart}
                 className="text-gray-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
               >
-
                 {labelCart}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#3D84A7] transition-all duration-200 group-hover:w-full" />
               </button>
@@ -219,7 +258,6 @@ const Header = ({ cartCount, onOpenCart }) => {
 
                 <span className="text-sm text-gray-600">{cartLabel}</span>
               </button>
-
             </div>
 
             {/* Mobile: language toggle + cart + menu */}
@@ -266,12 +304,12 @@ const Header = ({ cartCount, onOpenCart }) => {
                 </button>
               )}
 
-
               {/* Mobile Menu Button */}
               <button
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+                type="button"
               >
                 <svg
                   className="w-6 h-6"
@@ -299,29 +337,29 @@ const Header = ({ cartCount, onOpenCart }) => {
         {isMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-200 py-4 px-4">
             <div className="flex flex-col gap-4">
-              <a
-                href="#home"
-                className="text-gray-700 hover:text-[#3D84A7] font-medium py-2"
-                onClick={() => setIsMenuOpen(false)}
+              <button
+                type="button"
+                onClick={() => goToSection("home")}
+                className="text-left text-gray-700 hover:text-[#3D84A7] font-medium py-2"
               >
                 {labelHome}
-              </a>
-              <a
-                href="#products-section"
-                className="text-gray-700 hover:text-[#3D84A7] font-medium py-2"
-                onClick={() => setIsMenuOpen(false)}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => goToSection("products-section")}
+                className="text-left text-gray-700 hover:text-[#3D84A7] font-medium py-2"
               >
                 {labelProducts}
-              </a>
-              <a
-                href="#cart-section"
-                className="text-gray-700 hover:text-[#3D84A7] font-medium py-2 flex items-center gap-2"
-                onClick={(e) => {
-                  e.preventDefault();
+              </button>
+
+              <button
+                type="button"
+                className="text-left text-gray-700 hover:text-[#3D84A7] font-medium py-2 flex items-center gap-2"
+                onClick={() => {
                   setIsMenuOpen(false);
                   onOpenCart?.();
                 }}
-
               >
                 {labelCart}
                 {cartCount > 0 && (
@@ -331,7 +369,7 @@ const Header = ({ cartCount, onOpenCart }) => {
                     {cartCount}
                   </span>
                 )}
-              </a>
+              </button>
 
               {/* Mobile menu language pills */}
               <div className="pt-2 border-t border-gray-100">
@@ -363,6 +401,14 @@ const Header = ({ cartCount, onOpenCart }) => {
                   </button>
                 </div>
               </div>
+
+              {/* keep this Link for accessibility (doesn't affect Home/Products rules) */}
+              <Link
+                to="/"
+                className="sr-only"
+                aria-hidden="true"
+                tabIndex={-1}
+              />
             </div>
           </div>
         )}

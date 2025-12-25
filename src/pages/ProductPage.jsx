@@ -175,8 +175,11 @@ export default function ProductPage({ products, addToCart, onViewProduct }) {
   }, [products, slug]);
 
   useEffect(() => {
-    if (product && onViewProduct) onViewProduct(product);
-  }, [product, onViewProduct]);
+    if (product) onViewProduct?.(product);
+    // we intentionally don't depend on onViewProduct to avoid infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
+
 
   if (!product) {
     return (

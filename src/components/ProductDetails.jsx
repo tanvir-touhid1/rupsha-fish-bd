@@ -1,5 +1,7 @@
 // components/ProductDetails.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useLang } from "../context/LangContext.jsx";
+import { bnToEnDigits } from "../utils/digits.js";
 
 const safeNum = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
@@ -19,31 +21,27 @@ const avgWeightKg = (range) => {
   return (min + max) / 2;
 };
 
-const formatMoney = (n) => {
-  const x = safeNum(n);
-  if (x == null) return "—";
-  return `৳${Math.round(x)}`;
-};
-
-const formatQty = (n) => {
+const formatQtyRaw = (n) => {
   const x = Number(n);
   if (!Number.isFinite(x)) return "1";
   if (Number.isInteger(x)) return String(x);
   return x.toFixed(1).replace(/0+$/, "").replace(/\.$/, "");
 };
-const getNutrition = (p) => {
+
+// ✅ language-aware nutrition picker
+const getNutrition = (p, lang = "bn") => {
   const n = p?.nutrition;
   if (!n) return null;
 
-  // support: nutrition.per100g (object) or nutrition.enPer100g (object)
+  // Your schema: nutrition.per100g + nutrition.enPer100g
+  if (lang === "en" && n?.enPer100g && typeof n.enPer100g === "object") return n.enPer100g;
   if (n?.per100g && typeof n.per100g === "object") return n.per100g;
-  if (n?.enPer100g && typeof n.enPer100g === "object") return n.enPer100g;
 
-  // support: nutrition.bn / nutrition.en objects
+  // Support: nutrition.bn / nutrition.en
+  if (lang === "en" && n?.en && typeof n.en === "object") return n.en;
   if (n?.bn && typeof n.bn === "object") return n.bn;
-  if (n?.en && typeof n.en === "object") return n.en;
 
-  // fallback: nutrition itself
+  // fallback
   if (typeof n === "object") return n;
 
   return null;
@@ -54,8 +52,8 @@ const cleanNutritionEntries = (obj) => {
   return Object.entries(obj).filter(([, v]) => v != null && String(v).trim() !== "");
 };
 
-
 const ProductDetails = ({ product, onClose, addToCart }) => {
+  const { lang } = useLang(); // "bn" | "en"
   const [selectedImage, setSelectedImage] = useState(0);
 
   // selection state
@@ -63,6 +61,20 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
   const [gradeKey, setGradeKey] = useState("");
   const [count, setCount] = useState(1); // WHOLE_BY_SIZE_COUNT
   const [kg, setKg] = useState(1);       // KG_SIMPLE / KG_BY_GRADE
+
+  // ✅ helper: Bangla UI but English digits
+  const fmt = (v) => {
+    const s = v == null ? "" : String(v);
+    return lang === "bn" ? bnToEnDigits(s) : s;
+  };
+
+  const formatMoney = (n) => {
+    const x = safeNum(n);
+    if (x == null) return "—";
+    return fmt(`৳${Math.round(x)}`);
+  };
+
+  const formatQty = (n) => fmt(formatQtyRaw(n));
 
   if (!product) return null;
 
@@ -73,9 +85,9 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
   const sizeOptions = Array.isArray(product?.sizePricing) ? product.sizePricing : [];
   const gradeOptions = Array.isArray(product?.gradePricing)
     ? product.gradePricing
-    : (Array.isArray(product?.sizePricing) ? product.sizePricing : []); // backward-safe for prawns
+    : (Array.isArray(product?.sizePricing) ? product.sizePricing : []);
 
-  // ✅ FIX: init default selections using useEffect (not useMemo)
+  // ✅ init defaults
   useEffect(() => {
     if (model === "WHOLE_BY_SIZE_COUNT") {
       if (!sizeKey && sizeOptions.length > 0) setSizeKey(sizeOptions[0].sizeKey);
@@ -98,7 +110,6 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model, product?.id, sizeOptions.length, gradeOptions.length]);
 
-  // base per-kg price for KG_SIMPLE / fallback
   const kgSimplePricePerKg = useMemo(() => {
     return (
       safeNum(product?.startsFrom?.pricePerKg) ??
@@ -123,7 +134,6 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
     );
   }, [model, gradeKey, gradeOptions]);
 
-  // compute estimate
   const estimate = useMemo(() => {
     if (model === "WHOLE_BY_SIZE_COUNT") {
       const ppk = safeNum(selectedSize?.pricePerKg) ?? 0;
@@ -146,32 +156,61 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
 
   const displayLine = useMemo(() => {
     if (model === "WHOLE_BY_SIZE_COUNT") {
-      const label = selectedSize?.label?.en || selectedSize?.label?.bn || selectedSize?.sizeKey || "";
+      const label =
+        (lang === "en"
+          ? (selectedSize?.label?.en || selectedSize?.label?.bn)
+          : (selectedSize?.label?.bn || selectedSize?.label?.en)) ||
+        selectedSize?.sizeKey ||
+        "";
+
       const ppk = safeNum(selectedSize?.pricePerKg);
       const avg = avgWeightKg(selectedSize?.approxWholeFishWeightKg);
+
       return {
-        title: "Estimated price",
-        sub: `Size: ${label} • ৳${ppk ?? "—"}/kg • Avg wt/fish: ${avg ? `${avg.toFixed(2)}kg` : "—"}`,
-        hint: "Sold as whole fish. Final amount confirmed after weighing.",
+        title: lang === "bn" ? "আনুমানিক দাম" : "Estimated price",
+        sub:
+          lang === "bn"
+            ? fmt(`সাইজ: ${label} • ৳${ppk ?? "—"}/kg • প্রতি মাছ আনু. ${avg ? `${avg.toFixed(2)}kg` : "—"}`)
+            : `Size: ${label} • ৳${ppk ?? "—"}/kg • Avg wt/fish: ${avg ? `${avg.toFixed(2)}kg` : "—"}`,
+        hint:
+          lang === "bn"
+            ? "পুরো মাছ হিসেবে বিক্রি। ওজন মেপে চূড়ান্ত দাম নিশ্চিত করা হবে।"
+            : "Sold as whole fish. Final amount confirmed after weighing.",
       };
     }
+
     if (model === "KG_BY_GRADE") {
-      const label = selectedGrade?.label?.en || selectedGrade?.label?.bn || (selectedGrade?.gradeKey || selectedGrade?.sizeKey) || "";
+      const label =
+        (lang === "en"
+          ? (selectedGrade?.label?.en || selectedGrade?.label?.bn)
+          : (selectedGrade?.label?.bn || selectedGrade?.label?.en)) ||
+        (selectedGrade?.gradeKey || selectedGrade?.sizeKey) ||
+        "";
+
       const ppk = safeNum(selectedGrade?.pricePerKg);
       return {
-        title: "Estimated price",
-        sub: `Grade: ${label} • ৳${ppk ?? "—"}/kg`,
-        hint: "Price depends on grade (pcs per kg). Final amount confirmed on call.",
+        title: lang === "bn" ? "আনুমানিক দাম" : "Estimated price",
+        sub:
+          lang === "bn"
+            ? fmt(`গ্রেড: ${label} • ৳${ppk ?? "—"}/kg`)
+            : `Grade: ${label} • ৳${ppk ?? "—"}/kg`,
+        hint:
+          lang === "bn"
+            ? "গ্রেড অনুযায়ী দাম পরিবর্তিত হতে পারে। কল দিয়ে নিশ্চিত করা হবে।"
+            : "Price depends on grade (pcs per kg). Final amount confirmed on call.",
       };
     }
-    return {
-      title: "Estimated price",
-      sub: `৳${kgSimplePricePerKg || "—"}/kg`,
-      hint: "Sold by weight. Final amount confirmed after weighing.",
-    };
-  }, [model, selectedSize, selectedGrade, kgSimplePricePerKg]);
 
-  // qty step rules
+    return {
+      title: lang === "bn" ? "আনুমানিক দাম" : "Estimated price",
+      sub: fmt(`৳${kgSimplePricePerKg || "—"}/kg`),
+      hint:
+        lang === "bn"
+          ? "ওজন অনুযায়ী বিক্রি। ওজন মেপে চূড়ান্ত দাম নিশ্চিত করা হবে।"
+          : "Sold by weight. Final amount confirmed after weighing.",
+    };
+  }, [model, selectedSize, selectedGrade, kgSimplePricePerKg, lang]);
+
   const kgStep = model === "KG_BY_GRADE" ? 0.5 : 1;
 
   const incrementCount = () => setCount((v) => v + 1);
@@ -184,18 +223,24 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
       return next >= 1 ? next : 1;
     });
 
-  // arrows
-  const handlePrevImage = () => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  const handleNextImage = () => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  const handleBackdropClick = (e) => {
+  // close ONLY when clicking outside the modal card
+    if (e.target === e.currentTarget) {
+      onClose?.();
+    }
+  };
+
+
+  const handlePrevImage = () =>
+    setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  const handleNextImage = () =>
+    setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
 
   const title = product?.title?.bn || product?.nameBn || product?.name || "";
   const titleEn = product?.title?.en || product?.nameEn || "";
-  const nutrition = useMemo(() => getNutrition(product), [product]);
-  const nutritionEntries = useMemo(
-    () => cleanNutritionEntries(nutrition),
-    [nutrition]
-  );
 
+  const nutrition = useMemo(() => getNutrition(product, lang), [product, lang]);
+  const nutritionEntries = useMemo(() => cleanNutritionEntries(nutrition), [nutrition]);
 
   const handleAddToCart = () => {
     const sizeK = selectedSize?.sizeKey || "size";
@@ -240,7 +285,7 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
       cartQuantity: model === "WHOLE_BY_SIZE_COUNT" ? count : kg,
       unit: model === "WHOLE_BY_SIZE_COUNT" ? "fish" : "kg",
 
-      totalPrice: Number.isFinite(Number(estimate)) ? Number(estimate) : 0
+      totalPrice: Number.isFinite(Number(estimate)) ? Number(estimate) : 0,
     });
 
     onClose?.();
@@ -248,18 +293,35 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
 
   const whatsappText = useMemo(() => {
     if (model === "WHOLE_BY_SIZE_COUNT") {
-      const label = selectedSize?.label?.en || selectedSize?.label?.bn || selectedSize?.sizeKey || "";
+      const label =
+        (lang === "en"
+          ? (selectedSize?.label?.en || selectedSize?.label?.bn)
+          : (selectedSize?.label?.bn || selectedSize?.label?.en)) ||
+        selectedSize?.sizeKey ||
+        "";
+
       return `Hello! I'd like to order ${count} fish of ${titleEn || title} (Size: ${label}). Estimated: ${formatMoney(estimate)} (final confirmed on call).`;
     }
+
     if (model === "KG_BY_GRADE") {
-      const label = selectedGrade?.label?.en || selectedGrade?.label?.bn || (selectedGrade?.gradeKey || selectedGrade?.sizeKey) || "";
-      return `Hello! I'd like to order ${formatQty(kg)}kg of ${titleEn || title} (Grade: ${label}). Estimated: ${formatMoney(estimate)} (final confirmed on call).`;
+      const label =
+        (lang === "en"
+          ? (selectedGrade?.label?.en || selectedGrade?.label?.bn)
+          : (selectedGrade?.label?.bn || selectedGrade?.label?.en)) ||
+        (selectedGrade?.gradeKey || selectedGrade?.sizeKey) ||
+        "";
+
+      return `Hello! I'd like to order ${formatQtyRaw(kg)}kg of ${titleEn || title} (Grade: ${label}). Estimated: ${formatMoney(estimate)} (final confirmed on call).`;
     }
-    return `Hello! I'd like to order ${formatQty(kg)}kg of ${titleEn || title}. Estimated: ${formatMoney(estimate)} (final confirmed on call).`;
-  }, [model, count, kg, title, titleEn, selectedSize, selectedGrade, estimate]);
+
+    return `Hello! I'd like to order ${formatQtyRaw(kg)}kg of ${titleEn || title}. Estimated: ${formatMoney(estimate)} (final confirmed on call).`;
+  }, [model, count, kg, title, titleEn, selectedSize, selectedGrade, estimate, lang]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-start sm:items-center overflow-y-auto p-4">
+    <div
+      className="fixed inset-0 z-50 bg-black/50 flex justify-center items-start sm:items-center overflow-y-auto p-4"
+      onMouseDown={handleBackdropClick}
+    >
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 shadow-2xl">
         <div className="flex flex-col md:flex-row">
           {/* Images */}
@@ -343,7 +405,9 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
             {/* Selector block */}
             {model === "WHOLE_BY_SIZE_COUNT" && (
               <div className="mb-6">
-                <div className="font-semibold text-slate-900 mb-2">Select size</div>
+                <div className="font-semibold text-slate-900 mb-2">
+                  {lang === "bn" ? "সাইজ নির্বাচন করুন" : "Select size"}
+                </div>
                 <select
                   value={sizeKey}
                   onChange={(e) => setSizeKey(e.target.value)}
@@ -351,13 +415,17 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
                 >
                   {sizeOptions.map((s) => (
                     <option key={s.sizeKey} value={s.sizeKey}>
-                      {(s?.label?.bn || s?.label?.en || s.sizeKey)} — ৳{s.pricePerKg}/kg
+                      {fmt(
+                        `${(lang === "en" ? (s?.label?.en || s?.label?.bn) : (s?.label?.bn || s?.label?.en)) || s.sizeKey} — ৳${s.pricePerKg}/kg`
+                      )}
                     </option>
                   ))}
                 </select>
 
                 <div className="flex items-center justify-between mt-4">
-                  <span className="text-sm font-semibold text-slate-900">Fish count</span>
+                  <span className="text-sm font-semibold text-slate-900">
+                    {lang === "bn" ? "মাছের সংখ্যা" : "Fish count"}
+                  </span>
 
                   <div className="flex items-center rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
                     <button
@@ -368,7 +436,7 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
                       −
                     </button>
                     <div className="px-4 text-sm font-bold text-slate-900 tabular-nums">
-                      {count}
+                      {fmt(count)}
                     </div>
                     <button
                       type="button"
@@ -386,7 +454,9 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
               <div className="mb-6">
                 {model === "KG_BY_GRADE" && (
                   <>
-                    <div className="font-semibold text-slate-900 mb-2">Select grade</div>
+                    <div className="font-semibold text-slate-900 mb-2">
+                      {lang === "bn" ? "গ্রেড নির্বাচন করুন" : "Select grade"}
+                    </div>
                     <select
                       value={gradeKey}
                       onChange={(e) => setGradeKey(e.target.value)}
@@ -394,9 +464,14 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
                     >
                       {gradeOptions.map((g) => {
                         const key = g.gradeKey || g.sizeKey;
+                        const label =
+                          (lang === "en"
+                            ? (g?.label?.en || g?.label?.bn)
+                            : (g?.label?.bn || g?.label?.en)) || key;
+
                         return (
                           <option key={key} value={key}>
-                            {(g?.label?.bn || g?.label?.en || key)} — ৳{g.pricePerKg}/kg
+                            {fmt(`${label} — ৳${g.pricePerKg}/kg`)}
                           </option>
                         );
                       })}
@@ -405,7 +480,9 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
                 )}
 
                 <div className="flex items-center justify-between mt-4">
-                  <span className="text-sm font-semibold text-slate-900">Quantity (kg)</span>
+                  <span className="text-sm font-semibold text-slate-900">
+                    {lang === "bn" ? "পরিমাণ (কেজি)" : "Quantity (kg)"}
+                  </span>
 
                   <div className="flex items-center rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
                     <button
@@ -430,44 +507,50 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
                 </div>
 
                 {model === "KG_BY_GRADE" && (
-                  <div className="text-[11px] text-slate-500 mt-2">Step: 0.5kg</div>
+                  <div className="text-[11px] text-slate-500 mt-2">
+                    {lang === "bn" ? "স্টেপ: 0.5kg" : "Step: 0.5kg"}
+                  </div>
                 )}
               </div>
             )}
+
             {nutritionEntries.length > 0 && (
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-bold text-slate-900">
-                    Nutrition (per 100g)
+                    {lang === "bn" ? "পুষ্টিগুণ (প্রতি ১০০ গ্রাম)" : "Nutrition (per 100g)"}
                   </h3>
-                  <span className="text-[11px] text-slate-500">Approx.</span>
+                  <span className="text-[11px] text-slate-500">
+                    {lang === "bn" ? "প্রায়" : "Approx."}
+                  </span>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <div className="grid grid-cols-2 sm:grid-cols-[1fr_auto_1fr_auto] gap-x-5 gap-y-3 text-sm">
                     {nutritionEntries.map(([k, v]) => (
                       <React.Fragment key={k}>
-                        <div className="font-semibold text-slate-700">{k}</div>
-                        <div className="text-right text-slate-600 tabular-nums">{v}</div>
+                        <div className="font-semibold text-slate-700">{fmt(k)}</div>
+                        <div className="text-right text-slate-600 tabular-nums">{fmt(v)}</div>
                       </React.Fragment>
                     ))}
                   </div>
 
                   <div className="mt-3 pt-3 border-t border-slate-200 text-[11px] text-slate-500">
-                    Note: Values may vary depending on fish size and season.
+                    {lang === "bn"
+                      ? "নোট: সাইজ ও মৌসুম অনুযায়ী মান পরিবর্তিত হতে পারে।"
+                      : "Note: Values may vary depending on fish size and season."}
                   </div>
                 </div>
               </div>
             )}
 
-
             {/* Action buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={handleAddToCart}
                 className="flex-1 bg-[#3D84A7] text-white font-semibold px-6 py-3 rounded-xl shadow hover:bg-[#46CDCF] transition"
               >
-                Add to Cart
+                {lang === "bn" ? "কার্টে যোগ করুন" : "Add to Cart"}
               </button>
 
               <a
@@ -476,12 +559,14 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
                 rel="noopener noreferrer"
                 className="flex-1 bg-[#25D366] text-white font-semibold px-6 py-3 rounded-xl shadow hover:bg-[#1ebe5b] transition text-center"
               >
-                Buy Now
+                {lang === "bn" ? "এখনই কিনুন" : "Buy Now"}
               </a>
             </div>
 
             <div className="text-[11px] text-slate-500 mt-3">
-              Note: This is an estimated price for your convenience. Final payable amount will be confirmed by our agent.
+              {lang === "bn"
+                ? "নোট: এটি আনুমানিক দাম। আমাদের প্রতিনিধি কল করে চূড়ান্ত মূল্য নিশ্চিত করবেন।"
+                : "Note: This is an estimated price for your convenience. Final payable amount will be confirmed by our agent."}
             </div>
           </div>
         </div>

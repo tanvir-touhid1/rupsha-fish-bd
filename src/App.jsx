@@ -1,6 +1,6 @@
 // src/App.jsx
-import React, { useState, useEffect, useMemo } from "react";
-import { Routes, Route, useInRouterContext } from "react-router-dom";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import Header from "./components/Header.jsx";
 import Hero from "./components/Hero.jsx";
@@ -17,6 +17,8 @@ import RecentlyViewed from "./components/RecentlyViewed.jsx";
 import TrustBar from "./components/TrustBar.jsx";
 import MobileBottomNav from "./components/MobileBottomNav.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
+import ReturnPolicy from "./pages/ReturnPolicy.jsx";
+import RefundPolicy from "./pages/RefundPolicy.jsx";
 
 import ProductPage from "./pages/ProductPage.jsx";
 import { products, categories, PRODUCTS_VERSION } from "./data/products.js";
@@ -48,12 +50,6 @@ const getSearchableName = (p) => {
   return `${bn} ${en} ${base}`.toLowerCase();
 };
 
-const formatQtyForToast = (q) => {
-  if (q == null) return "";
-  if (Number.isInteger(q)) return String(q);
-  return Number(q).toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-};
-
 const safeNum = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 const avgWeightKg = (range) => {
@@ -70,7 +66,11 @@ const computeEstimatedTotal = (item, product) => {
   if (model === "WHOLE_BY_SIZE_COUNT") {
     const sizeKey = item?.selectedSizeKey;
     const tier = (product?.sizePricing || []).find((s) => s.sizeKey === sizeKey);
-    const ppk = safeNum(tier?.pricePerKg) ?? safeNum(product?.priceMin) ?? safeNum(product?.price) ?? 0;
+    const ppk =
+      safeNum(tier?.pricePerKg) ??
+      safeNum(product?.priceMin) ??
+      safeNum(product?.price) ??
+      0;
     const avg = avgWeightKg(tier?.approxWholeFishWeightKg) ?? 0;
     const count = Math.max(1, Number(item?.count) || 1);
     return count * avg * ppk;
@@ -81,7 +81,11 @@ const computeEstimatedTotal = (item, product) => {
     const gradeKey = item?.selectedGradeKey;
     const list = product?.gradePricing || product?.sizePricing || [];
     const tier = list.find((g) => (g.gradeKey || g.sizeKey) === gradeKey);
-    const ppk = safeNum(tier?.pricePerKg) ?? safeNum(product?.priceMin) ?? safeNum(product?.price) ?? 0;
+    const ppk =
+      safeNum(tier?.pricePerKg) ??
+      safeNum(product?.priceMin) ??
+      safeNum(product?.price) ??
+      0;
     const kg = Math.max(1, Number(item?.kg) || 1);
     return kg * ppk;
   }
@@ -96,7 +100,6 @@ const computeEstimatedTotal = (item, product) => {
   const kg = Math.max(1, Number(item?.kg) || 1);
   return kg * perKg;
 };
-
 
 // ------------------- skeleton -------------------
 const ProductSkeletonGrid = () => {
@@ -128,8 +131,64 @@ const ProductSkeletonGrid = () => {
 
 function App() {
   console.log("✅ App products version =", PRODUCTS_VERSION);
-  console.log("✅ App first product price snapshot =", products?.[0]?.slug, products?.[0]?.priceMin, products?.[0]?.priceMax, products?.[0]?.startsFrom?.pricePerKg);
+  console.log(
+    "✅ App first product price snapshot =",
+    products?.[0]?.slug,
+    products?.[0]?.priceMin,
+    products?.[0]?.priceMax,
+    products?.[0]?.startsFrom?.pricePerKg
+  );
+  const loc = useLocation();
+useEffect(() => {
+  console.log("📍 LOCATION CHANGED:", {
+    pathname: loc.pathname,
+    hash: loc.hash,
+    search: loc.search,
+  });
+}, [loc.pathname, loc.hash, loc.search]);
 
+
+  // IMPORTANT: do NOT add BrowserRouter here (you already have a Router in main.jsx).
+  const location = useLocation();
+  const { pathname, hash, state } = location;
+
+  // ✅ App-level hash scroll handler (reliable across routes + repeated same-hash clicks)
+  useEffect(() => {
+    // If not home route, normal navigation should go to top
+    if (pathname !== "/") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      return;
+    }
+
+    // Home route: scroll to hash if present; otherwise top
+    if (!hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      return;
+    }
+
+    const id = hash.startsWith("#") ? hash.slice(1) : hash;
+    let cancelled = false;
+
+    const tryScroll = (attempt = 0) => {
+      if (cancelled) return;
+
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+
+      if (attempt < 30) {
+        setTimeout(() => tryScroll(attempt + 1), 50);
+      }
+    };
+
+    tryScroll(0);
+    return () => {
+      cancelled = true;
+    };
+    // state?.scrollNonce lets Header force a re-run even when navigating to the same hash
+  }, [pathname, hash, state?.scrollNonce]);
 
   const [cartItems, setCartItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -144,76 +203,75 @@ function App() {
   const closeCart = () => setIsCartOpen(false);
 
   useEffect(() => {
-  // 1) bust cached localStorage when products pricing changes
-  const lastVersion = localStorage.getItem("fishmart-products-version");
-  const versionChanged = lastVersion && lastVersion !== PRODUCTS_VERSION;
+    // 1) bust cached localStorage when products pricing changes
+    const lastVersion = localStorage.getItem("fishmart-products-version");
+    const versionChanged = lastVersion && lastVersion !== PRODUCTS_VERSION;
 
-  // ---- Cart hydrate (recompute totals using latest products.js) ----
-  const hydrateCart = (rawItems) => {
-    if (!Array.isArray(rawItems)) return [];
-    return rawItems.map((item) => {
-      const product = products.find((p) => p.id === item.id);
-      if (!product) return item;
+    // ---- Cart hydrate (recompute totals using latest products.js) ----
+    const hydrateCart = (rawItems) => {
+      if (!Array.isArray(rawItems)) return [];
+      return rawItems.map((item) => {
+        const product = products.find((p) => p.id === item.id);
+        if (!product) return item;
 
-      const next = { ...item };
-      const est = computeEstimatedTotal(next, product);
-      next.totalPrice = Number.isFinite(est) ? est : Number(next.totalPrice) || 0;
-      return next;
-    });
-  };
+        const next = { ...item };
+        const est = computeEstimatedTotal(next, product);
+        next.totalPrice = Number.isFinite(est)
+          ? est
+          : Number(next.totalPrice) || 0;
+        return next;
+      });
+    };
 
-  // ---- Recently viewed hydrate (refresh prices using latest products.js) ----
-  const hydrateViewed = (rawItems) => {
-    if (!Array.isArray(rawItems)) return [];
-    return rawItems.map((rv) => {
-      const product = products.find((p) => p.id === rv.id);
-      if (!product) return rv;
-      return {
-        ...rv,
-        priceMin: product.priceMin,
-        priceMax: product.priceMax,
-        price: product.price,
-        unit: product.unit || "kg",
-      };
-    });
-  };
+    // ---- Recently viewed hydrate (refresh prices using latest products.js) ----
+    const hydrateViewed = (rawItems) => {
+      if (!Array.isArray(rawItems)) return [];
+      return rawItems.map((rv) => {
+        const product = products.find((p) => p.id === rv.id);
+        if (!product) return rv;
+        return {
+          ...rv,
+          priceMin: product.priceMin,
+          priceMax: product.priceMax,
+          price: product.price,
+          unit: product.unit || "kg",
+        };
+      });
+    };
 
-  // If pricing changed: safest = clear viewed; cart can be rehydrated
-  if (versionChanged) {
-    localStorage.removeItem("fishmart-recently-viewed");
-  }
-
-  // Load + hydrate cart
-  const savedCart = localStorage.getItem("fishmart-cart");
-  if (savedCart) {
-    try {
-      const parsed = JSON.parse(savedCart);
-      setCartItems(hydrateCart(parsed));
-    } catch {
-      setCartItems([]);
+    // If pricing changed: safest = clear viewed; cart can be rehydrated
+    if (versionChanged) {
+      localStorage.removeItem("fishmart-recently-viewed");
     }
-  }
 
-  // Load + hydrate viewed
-  const savedViewed = localStorage.getItem("fishmart-recently-viewed");
-  if (savedViewed) {
-    try {
-      const parsed = JSON.parse(savedViewed);
-      setRecentlyViewed(hydrateViewed(parsed));
-    } catch {
-      setRecentlyViewed([]);
+    // Load + hydrate cart
+    const savedCart = localStorage.getItem("fishmart-cart");
+    if (savedCart) {
+      try {
+        const parsed = JSON.parse(savedCart);
+        setCartItems(hydrateCart(parsed));
+      } catch {
+        setCartItems([]);
+      }
     }
-  }
 
-  // Save current version
-  localStorage.setItem("fishmart-products-version", PRODUCTS_VERSION);
+    // Load + hydrate viewed
+    const savedViewed = localStorage.getItem("fishmart-recently-viewed");
+    if (savedViewed) {
+      try {
+        const parsed = JSON.parse(savedViewed);
+        setRecentlyViewed(hydrateViewed(parsed));
+      } catch {
+        setRecentlyViewed([]);
+      }
+    }
 
-  const t = setTimeout(() => setIsLoadingProducts(false), 500);
-  return () => clearTimeout(t);
-}, []);
+    // Save current version
+    localStorage.setItem("fishmart-products-version", PRODUCTS_VERSION);
 
-
-
+    const t = setTimeout(() => setIsLoadingProducts(false), 500);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("fishmart-cart", JSON.stringify(cartItems));
@@ -227,108 +285,124 @@ function App() {
   }, [recentlyViewed]);
 
   const addToCart = (incoming) => {
-  setCartItems((prevItems) => {
-    const keyIn = incoming.cartKey || incoming.id;
+    setCartItems((prevItems) => {
+      const keyIn = incoming.cartKey || incoming.id;
 
-    const existingIndex = prevItems.findIndex(
-      (it) => (it.cartKey || it.id) === keyIn
-    );
+      const existingIndex = prevItems.findIndex(
+        (it) => (it.cartKey || it.id) === keyIn
+      );
+      const product = products.find((p) => p.id === incoming.id);
 
-    const product = products.find((p) => p.id === incoming.id);
+      if (existingIndex !== -1) {
+        const updated = [...prevItems];
+        const existing = updated[existingIndex];
 
-    if (existingIndex !== -1) {
-      const updated = [...prevItems];
-      const existing = updated[existingIndex];
+        // Merge qty based on pricingModel
+        const model =
+          incoming.pricingModel || existing.pricingModel || product?.pricingModel;
 
-      // Merge qty based on pricingModel
-      const model = incoming.pricingModel || existing.pricingModel || product?.pricingModel;
+        const next = { ...existing };
 
-      let next = { ...existing };
+        if (model === "WHOLE_BY_SIZE_COUNT") {
+          const addCount = Number(incoming.count) || 1;
+          next.count = (Number(existing.count) || 1) + addCount;
+        } else {
+          // KG_SIMPLE or KG_BY_GRADE
+          const addKg = Number(incoming.kg) || 1;
+          next.kg = Math.round(((Number(existing.kg) || 1) + addKg) * 10) / 10;
+        }
 
-      if (model === "WHOLE_BY_SIZE_COUNT") {
-        const addCount = Number(incoming.count) || 1;
-        next.count = (Number(existing.count) || 1) + addCount;
-      } else {
-        // KG_SIMPLE or KG_BY_GRADE
-        const addKg = Number(incoming.kg) || 1;
-        next.kg = Math.round(((Number(existing.kg) || 1) + addKg) * 10) / 10;
+        next.totalPrice = computeEstimatedTotal(next, product);
+
+        updated[existingIndex] = next;
+        return updated;
       }
 
-      next.totalPrice = computeEstimatedTotal(next, product);
-
-      updated[existingIndex] = next;
-      return updated;
-    }
-
-    // New line item
-    const item = { ...incoming };
-    item.totalPrice = computeEstimatedTotal(item, product);
-    return [...prevItems, item];
-  });
-
-  openCart();
-
-  // Toast message (model-aware)
-  const productName = incoming.name || "Item";
-  const model = incoming.pricingModel;
-
-  let qtyText = "";
-  if (model === "WHOLE_BY_SIZE_COUNT") qtyText = `${incoming.count || 1} fish`;
-  else qtyText = `${incoming.kg || 1} kg`;
-
-  setToast({
-    message: `${qtyText} ${productName} added (estimate).`,
-    type: "success",
-  });
-};
-
-
-  const removeFromCart = (index) => {
-  setCartItems((prev) => {
-    const item = prev[index];
-    if (!item) return prev;
-
-    const updated = [...prev];
-    updated.splice(index, 1);
-
-    // 🔴 removal toast
-    setToast({
-      message: `${item.nameBn || item.name || "Item"} removed from cart`,
-      type: "error",
+      // New line item
+      const item = { ...incoming };
+      item.totalPrice = computeEstimatedTotal(item, product);
+      return [...prevItems, item];
     });
 
-    return updated;
+    openCart();
+
+    // Toast message (model-aware)
+    const productName = incoming.name || "Item";
+    const model = incoming.pricingModel;
+
+    const qtyText =
+      model === "WHOLE_BY_SIZE_COUNT"
+        ? `${incoming.count || 1} fish`
+        : `${incoming.kg || 1} kg`;
+
+    setToast({
+      message: `${qtyText} ${productName} added (estimate).`,
+      type: "success",
     });
   };
 
+  const removeFromCart = (index) => {
+    setCartItems((prev) => {
+      const item = prev[index];
+      if (!item) return prev;
+
+      const updated = [...prev];
+      updated.splice(index, 1);
+
+      // 🔴 removal toast
+      setToast({
+        message: `${item.nameBn || item.name || "Item"} removed from cart`,
+        type: "error",
+      });
+
+      return updated;
+    });
+  };
 
   const clearCart = () => setCartItems([]);
 
   const snapToStep = (value, step) => {
-  const v = Number(value);
-  if (!Number.isFinite(v)) return step;
-  // snap safely, avoid floating noise
-  const snapped = Math.round(v / step) * step;
-  return Math.round(snapped * 10) / 10;
-};
+    const v = Number(value);
+    if (!Number.isFinite(v)) return step;
+    // snap safely, avoid floating noise
+    const snapped = Math.round(v / step) * step;
+    return Math.round(snapped * 10) / 10;
+  };
 
-const updateCartItemQuantity = (index, newValue) => {
-  setCartItems((prevItems) => {
-    const updated = [...prevItems];
-    const item = updated[index];
-    if (!item) return prevItems;
+  const updateCartItemQuantity = (index, newValue) => {
+    setCartItems((prevItems) => {
+      const updated = [...prevItems];
+      const item = updated[index];
+      if (!item) return prevItems;
 
-    const product = products.find((p) => p.id === item.id);
-    const model = item.pricingModel || product?.pricingModel || "KG_SIMPLE";
+      const product = products.find((p) => p.id === item.id);
+      const model = item.pricingModel || product?.pricingModel || "KG_SIMPLE";
 
-    if (model === "WHOLE_BY_SIZE_COUNT") {
-      const nextCount = Math.max(1, Math.round(Number(newValue) || 1));
+      if (model === "WHOLE_BY_SIZE_COUNT") {
+        const nextCount = Math.max(1, Math.round(Number(newValue) || 1));
+
+        const next = {
+          ...item,
+          count: nextCount,
+          // keep legacy-friendly field in sync (some UI may still read it)
+          cartQuantity: nextCount,
+        };
+
+        const est = computeEstimatedTotal(next, product);
+        next.totalPrice = Number.isFinite(est) ? est : item.totalPrice ?? 0;
+
+        updated[index] = next;
+        return updated;
+      }
+
+      // kg-based
+      const step = model === "KG_BY_GRADE" ? 0.5 : 1;
+      const nextKg = Math.max(1, snapToStep(newValue, step));
 
       const next = {
         ...item,
-        count: nextCount,
-        // keep legacy-friendly field in sync (some UI may still read it)
-        cartQuantity: nextCount,
+        kg: nextKg,
+        cartQuantity: nextKg, // keep old UI consistent
       };
 
       const est = computeEstimatedTotal(next, product);
@@ -336,46 +410,28 @@ const updateCartItemQuantity = (index, newValue) => {
 
       updated[index] = next;
       return updated;
-    }
-
-    // kg-based
-    const step = model === "KG_BY_GRADE" ? 0.5 : 1;
-    const nextKg = Math.max(1, snapToStep(newValue, step));
-
-    const next = {
-      ...item,
-      kg: nextKg,
-      cartQuantity: nextKg, // keep old UI consistent
-    };
-
-    const est = computeEstimatedTotal(next, product);
-    next.totalPrice = Number.isFinite(est) ? est : item.totalPrice ?? 0;
-
-    updated[index] = next;
-    return updated;
-  });
-};
-
-
-
-  const handleViewProduct = (product) => {
-    setRecentlyViewed((prev) => {
-      const filtered = prev.filter((p) => p.id !== product.id);
-      const newItem = {
-        id: product.id,
-        name: getDisplayTitle(product, "bn"),
-        nameBn: getTitleBn(product),
-        nameEn: getTitleEn(product),
-        image: getMainImage(product),
-        priceMin: product.priceMin,
-        priceMax: product.priceMax,
-        price: product.price,
-        unit: product.unit || "kg", // ✅ don't use weight "1kg"
-        slug: product.slug,
-      };
-      return [newItem, ...filtered].slice(0, 10);
     });
   };
+
+  const handleViewProduct = useCallback((product) => {
+  setRecentlyViewed((prev) => {
+    const filtered = prev.filter((p) => p.id !== product.id);
+    const newItem = {
+      id: product.id,
+      name: getDisplayTitle(product, "bn"),
+      nameBn: getTitleBn(product),
+      nameEn: getTitleEn(product),
+      image: getMainImage(product),
+      priceMin: product.priceMin,
+      priceMax: product.priceMax,
+      price: product.price,
+      unit: product.unit || "kg",
+      slug: product.slug,
+    };
+    return [newItem, ...filtered].slice(0, 10);
+  });
+}, []);
+
 
   const filteredProducts = useMemo(() => {
     const term = (searchTerm || "").toLowerCase();
@@ -388,20 +444,18 @@ const updateCartItemQuantity = (index, newValue) => {
   }, [searchTerm, selectedCategory]);
 
   const subtotal = useMemo(() => {
-  return cartItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
-}, [cartItems]);
-
+    return cartItems.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
+  }, [cartItems]);
 
   // ✅ show total qty count (better UX than unique lines)
   const itemCount = useMemo(() => {
-  return cartItems.reduce((sum, item) => {
-    const model = item.pricingModel;
-    if (model === "WHOLE_BY_SIZE_COUNT") return sum + (Number(item.count) || 1);
-    // kg items count as 1 line each
-    return sum + 1;
-  }, 0);
-}, [cartItems]);
-
+    return cartItems.reduce((sum, item) => {
+      const model = item.pricingModel;
+      if (model === "WHOLE_BY_SIZE_COUNT") return sum + (Number(item.count) || 1);
+      // kg items count as 1 line each
+      return sum + 1;
+    }, 0);
+  }, [cartItems]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100">
@@ -414,13 +468,16 @@ const updateCartItemQuantity = (index, newValue) => {
             path="/"
             element={
               <>
-                <section id="home">
+                <section id="home" className="scroll-mt-24">
                   <Hero />
                 </section>
 
                 <TrustBar />
 
-                <section id="products-section" className="py-8 md:py-12">
+                <section
+                  id="products-section"
+                  className="py-8 md:py-12 scroll-mt-24"
+                >
                   <div className="container mx-auto px-4">
                     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 md:p-8">
                       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
@@ -551,6 +608,8 @@ const updateCartItemQuantity = (index, newValue) => {
               />
             }
           />
+          <Route path="/return-policy" element={<ReturnPolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
         </Routes>
       </main>
 
