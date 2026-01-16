@@ -1,15 +1,30 @@
 // components/MobileBottomNav.jsx
 import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const scrollToId = (id) => {
   const el = document.getElementById(id);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth" });
-  }
+  if (el) el.scrollIntoView({ behavior: "smooth" });
 };
 
 const MobileBottomNav = ({ cartCount }) => {
   const hasItems = cartCount > 0;
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const goHomeAndScroll = (id) => {
+    if (location.pathname === "/") {
+      scrollToId(id);
+      return;
+    }
+
+    // Navigate home first, then scroll after DOM renders
+    navigate("/", { replace: false });
+    requestAnimationFrame(() => {
+      // a tiny delay makes it robust on slower devices
+      setTimeout(() => scrollToId(id), 60);
+    });
+  };
 
   return (
     <nav className="fixed bottom-1 inset-x-0 z-40 lg:hidden pointer-events-none">
@@ -26,7 +41,8 @@ const MobileBottomNav = ({ cartCount }) => {
         >
           {/* Home */}
           <button
-            onClick={() => scrollToId("home")}
+            type="button"
+            onClick={() => goHomeAndScroll("home")}
             className="flex flex-col items-center justify-center gap-0.5"
           >
             <span className="text-lg">🏠</span>
@@ -35,7 +51,8 @@ const MobileBottomNav = ({ cartCount }) => {
 
           {/* Products */}
           <button
-            onClick={() => scrollToId("products-section")}
+            type="button"
+            onClick={() => goHomeAndScroll("products-section")}
             className="flex flex-col items-center justify-center gap-0.5"
           >
             <span className="text-lg">🐟</span>
@@ -44,7 +61,8 @@ const MobileBottomNav = ({ cartCount }) => {
 
           {/* Cart */}
           <button
-            onClick={() => scrollToId("cart-section")}
+            type="button"
+            onClick={() => goHomeAndScroll("cart-section")}
             className="relative flex flex-col items-center justify-center gap-0.5"
           >
             <span className="text-lg">🛒</span>
