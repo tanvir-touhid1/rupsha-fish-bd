@@ -30,6 +30,13 @@ const pickList = (value, lang = "bn") => {
   return [];
 };
 
+const getImages = (p) => {
+  if (Array.isArray(p?.images) && p.images.length > 0) return p.images;
+  if (p?.image) return [p.image];
+  return ["/images/fallback-fish.jpg"];
+};
+
+
 // Titles (supports: title{bn,en} OR nameBn/nameEn OR name)
 const getTitleBn = (p) => p?.title?.bn || p?.nameBn || p?.name || "";
 const getTitleEn = (p) => p?.title?.en || p?.nameEn || "";
@@ -161,18 +168,52 @@ const avgWeightKg = (range) => {
 export default function ProductPage({ products, addToCart, onViewProduct }) {
   const { lang } = useLang(); // "bn" | "en"
   const { slug } = useParams();
-  const [qty, setQty] = useState(1.0); // legacy fallback only
   const [openDetails, setOpenDetails] = useState(false);
   const [selectedSizeKey, setSelectedSizeKey] = useState("");
   const [selectedGradeKey, setSelectedGradeKey] = useState("");
   const [fishCount, setFishCount] = useState(1);
   const [kgQty, setKgQty] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [isFading, setIsFading] = useState(false);
 
+  const setImageSmooth = (nextIndex) => {
+    if (nextIndex === selectedImage) return;
+    setIsFading(true);
+    window.setTimeout(() => {
+      setSelectedImage(nextIndex);
+      window.setTimeout(() => setIsFading(false), 30);
+    }, 140);
+  };
 
   const product = useMemo(() => {
     const target = String(slug || "").toLowerCase();
     return (products || []).find((p) => String(p.slug || "").toLowerCase() === target);
   }, [products, slug]);
+
+  
+
+  const images = useMemo(() => getImages(product), [product]);
+
+  useEffect(() => {
+    setSelectedImage(0);
+    setIsFading(false);
+  }, [product?.id]);
+
+  useEffect(() => {
+    if (selectedImage >= images.length) setSelectedImage(0);
+  }, [images.length, selectedImage]);
+
+  const prevImage = () => {
+    const next = selectedImage === 0 ? images.length - 1 : selectedImage - 1;
+    setImageSmooth(next);
+  };
+
+  const nextImage = () => {
+    const next = selectedImage === images.length - 1 ? 0 : selectedImage + 1;
+    setImageSmooth(next);
+  };
+
+
 
   useEffect(() => {
     if (product) onViewProduct?.(product);
@@ -220,10 +261,9 @@ export default function ProductPage({ products, addToCart, onViewProduct }) {
     setSelectedGradeKey((gradeOptions?.[0]?.gradeKey || gradeOptions?.[0]?.sizeKey) || "");
     setFishCount(1);
     setKgQty(1);
-    setQty(1.0);
     setOpenDetails(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id]);
+
 
   const selectedSize = useMemo(() => {
     return sizeOptions.find((s) => s.sizeKey === selectedSizeKey) || sizeOptions[0] || null;
@@ -262,7 +302,7 @@ export default function ProductPage({ products, addToCart, onViewProduct }) {
     if (model === "LEGACY" && sizeOptions.length === 0 && gradeOptions.length === 0) {
       const unit = getUnit(product);
       const basePrice = product.priceMin ?? product.price ?? 0;
-      const totalPrice = basePrice > 0 ? basePrice * qty : 0;
+      const totalPrice = basePrice > 0 ? basePrice * kgQty : 0;
 
       addToCart({
         id: product.id,
@@ -273,7 +313,7 @@ export default function ProductPage({ products, addToCart, onViewProduct }) {
         price: product.price,
         priceMin: product.priceMin,
         weight: product.weight || product.unit || unit,
-        cartQuantity: qty,
+        cartQuantity: kgQty,
         totalPrice,
         slug: product.slug,
       });
@@ -329,10 +369,8 @@ export default function ProductPage({ products, addToCart, onViewProduct }) {
 
   // ===== legacy qty helpers (only used for legacy fallback block) =====
   const unit = getUnit(product);
-  const basePrice = product.priceMin ?? product.price ?? 0;
-  const totalPrice = basePrice > 0 ? basePrice * qty : null;
-  const decrement = () => setQty((p) => Math.max(0.5, Number((p - 0.5).toFixed(1))));
-  const increment = () => setQty((p) => Number((p + 0.5).toFixed(1)));
+  const decrement = () => setKgQty((k) => Math.max(0.5, Math.round((k - 0.5) * 10) / 10));
+  const increment = () => setKgQty((k) => Math.round((k + 0.5) * 10) / 10);
 
   // Specifications (old + new)
   const pageTitle = getDisplayTitle(product, lang);
@@ -390,72 +428,166 @@ export default function ProductPage({ products, addToCart, onViewProduct }) {
         </div>
 
         {/* Image + Order Options */}
-<div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-  {/* ================= LEFT COLUMN (stack) ================= */}
-  <div className="lg:col-span-3 space-y-6">
-    {/* Top main product card */}
-    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 md:p-8">
-      <div className="h-64 md:h-80 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden">
-        <img
-          src={getMainImage(product)}
-          alt={pageTitle}
-          className="max-h-full max-w-full object-contain"
-          loading="lazy"
-        />
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+          {/* ================= LEFT COLUMN (stack) ================= */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* 1) Gallery Card (Luxury) */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-5 md:p-8 shadow-sm">
+              <div className="relative">
+                {/* Premium frame */}
+                <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden border border-slate-200 ring-1 ring-black/5 shadow-[0_14px_40px_-28px_rgba(0,0,0,0.5)]">
+                  {/* soft premium backdrop */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100" />
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute -top-24 -left-24 h-56 w-56 rounded-full bg-[#3D84A7]/10 blur-2xl" />
+                    <div className="absolute -bottom-28 -right-28 h-64 w-64 rounded-full bg-[#46CDCF]/10 blur-2xl" />
+                  </div>
 
-      <p className="mt-4 text-sm md:text-base text-gray-700 leading-relaxed">
-        {shortDescription}
-      </p>
+                  {/* ✨ glass reflection overlay */}
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.55]">
+                    <div className="absolute -top-24 -left-10 h-56 w-72 rotate-12 bg-white/40 blur-xl rounded-[60px]" />
+                    <div className="absolute top-10 right-6 h-40 w-52 -rotate-12 bg-white/20 blur-lg rounded-[50px]" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/[0.03] via-transparent to-white/[0.10]" />
+                  </div>
 
-      {Array.isArray(product.badges) && product.badges.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-4">
-          {product.badges.map((b, i) => (
-            <span
-              key={`${b}-${i}`}
-              className="px-3 py-1 text-xs bg-slate-50 text-gray-700 rounded-full border border-slate-200"
-            >
-              {b}
-            </span>
-          ))}
-        </div>
-      )}
+                  {/* image */}
+                  <div className="relative h-full w-full flex items-center justify-center p-3 md:p-5">
+                    <img
+                      src={images[selectedImage]}
+                      alt={pageTitle}
+                      loading="lazy"
+                      className={[
+                        "max-h-full max-w-full object-contain",
+                        "drop-shadow-[0_18px_22px_rgba(0,0,0,0.14)]",
+                        "transition-all duration-300 ease-out",
+                        isFading ? "opacity-0 scale-[0.985]" : "opacity-100 scale-[1]",
+                      ].join(" ")}
+                    />
+                  </div>
 
-      {/* Health Benefits */}
-      {healthBenefits.length > 0 && (
-        <div className="mt-5 border-t border-slate-200 pt-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-gray-900">
-              {lang === "bn" ? "স্বাস্থ্য উপকারিতা" : "Health Benefits"}
-            </h3>
-          </div>
+                  {/* image count badge */}
+                  {images.length > 1 && (
+                    <div className="absolute left-4 top-4 text-[11px] font-semibold text-slate-700 bg-white/80 backdrop-blur px-2.5 py-1 rounded-full border border-white/60 shadow-sm">
+                      {selectedImage + 1}/{images.length}
+                    </div>
+                  )}
+                </div>
 
-          <ul className="list-disc pl-5 space-y-1.5 text-sm text-gray-700">
-            {healthBenefits.map((x, i) => (
-              <li key={i}>{x}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+                {/* Nav buttons */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={prevImage}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/75 backdrop-blur border border-white/60 shadow hover:bg-white transition grid place-items-center focus:outline-none focus:ring-2 focus:ring-[#3D84A7]/40"
+                      aria-label="Previous image"
+                    >
+                      <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
 
-    </div>
+                    <button
+                      type="button"
+                      onClick={nextImage}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/75 backdrop-blur border border-white/60 shadow hover:bg-white transition grid place-items-center focus:outline-none focus:ring-2 focus:ring-[#3D84A7]/40"
+                      aria-label="Next image"
+                    >
+                      <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+              </div>
 
-    {/* Cooking Tips (NOW in left column, directly under main card) */}
-    <SectionCard title={lang === "bn" ? "রান্নার টিপস" : "Cooking Tips"}>
-      {cookingTips.length > 0 ? (
-        <ul className="list-disc pl-5 space-y-2 text-sm text-gray-700">
-          {cookingTips.map((x, i) => (
-            <li key={i}>{x}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm text-gray-600">
-          {lang === "bn"
-            ? "খুব শিগগিরই রান্নার উপায় ও টিপস যোগ করা হবে।"
-            : "We’ll add cooking approach & tips soon."}
-        </p>
-      )}
-    </SectionCard>
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                  {images.map((img, idx) => {
+                    const active = selectedImage === idx;
+                    return (
+                      <button
+                        key={img + idx}
+                        type="button"
+                        onClick={() => setImageSmooth(idx)}
+                        className={[
+                          "w-16 h-16 rounded-2xl overflow-hidden border bg-white transition",
+                          "shadow-[0_8px_22px_-18px_rgba(0,0,0,0.35)]",
+                          active
+                            ? "border-[#3D84A7] ring-2 ring-[#3D84A7]/25"
+                            : "border-slate-200 hover:border-slate-300",
+                        ].join(" ")}
+                        aria-label={`Select image ${idx + 1}`}
+                      >
+                        <div className="h-full w-full bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-1.5">
+                          <img
+                            src={img}
+                            alt={`${pageTitle} ${idx + 1}`}
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+
+
+            {/* 2) About Card */}
+            <SectionCard title={lang === "bn" ? "পরিচিতি" : "About"}>
+              <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                {shortDescription}
+              </p>
+
+              {Array.isArray(product.badges) && product.badges.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {product.badges.map((b, i) => (
+                    <span
+                      key={`${b}-${i}`}
+                      className="px-3 py-1 text-xs bg-slate-50 text-gray-700 rounded-full border border-slate-200"
+                    >
+                      {b}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            {/* 3) Health Benefits Card */}
+            {healthBenefits.length > 0 && (
+              <SectionCard title={lang === "bn" ? "স্বাস্থ্য উপকারিতা" : "Health Benefits"}>
+                <ul className="grid gap-2 text-sm text-gray-700">
+                  {healthBenefits.map((x, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-[#3D84A7] shrink-0" />
+                      <span className="leading-relaxed">{x}</span>
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+            )}
+
+
+            {/* Cooking Tips (NOW in left column, directly under main card) */}
+            <SectionCard title={lang === "bn" ? "রান্নার টিপস" : "Cooking Tips"}>
+              {cookingTips.length > 0 ? (
+                <ul className="list-disc pl-5 space-y-2 text-sm text-gray-700">
+                  {cookingTips.map((x, i) => (
+                    <li key={i}>{x}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  {lang === "bn"
+                    ? "খুব শিগগিরই রান্নার উপায় ও টিপস যোগ করা হবে।"
+                    : "We’ll add cooking approach & tips soon."}
+                </p>
+              )}
+            </SectionCard>
 
     {/* Nutrition (LEFT column, under Cooking Tips) */}
 {nutrition && (
@@ -765,7 +897,7 @@ export default function ProductPage({ products, addToCart, onViewProduct }) {
               </button>
 
               <span className="font-semibold text-gray-900 text-sm">
-                {formatQty(qty)} {unit}
+                {formatQty(kgQty)} {unit}
               </span>
 
               <button
@@ -787,20 +919,19 @@ export default function ProductPage({ products, addToCart, onViewProduct }) {
             </button>
           </div>
 
-          <div className="text-sm text-gray-600">
-            {totalPrice != null ? (
-              <span>
-                {lang === "bn" ? "আনুমানিক মোট:" : "Estimated total:"}{" "}
-                <span className="font-bold text-gray-900">৳{Math.round(totalPrice)}</span>
-              </span>
-            ) : (
-              <span>
-                {lang === "bn"
-                  ? "চূড়ান্ত দাম ফোন/WhatsApp এ নিশ্চিত করা হবে।"
-                  : "Final price will be confirmed by phone/WhatsApp."}
-              </span>
-            )}
+          <div className="text-sm text-gray-600 space-y-1">
+            <div>
+              {lang === "bn" ? "আনুমানিক মোট:" : "Estimated total:"}{" "}
+              <span className="font-bold text-gray-900">{money(estimateTotal)}</span>
+            </div>
+
+            <div className="text-[12px] text-slate-500">
+              {lang === "bn"
+                ? "চূড়ান্ত দাম ফোন/WhatsApp এ নিশ্চিত করা হবে।"
+                : "Final price will be confirmed by phone/WhatsApp."}
+            </div>
           </div>
+
 
           {/* Calm reassurance (always visible) */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">

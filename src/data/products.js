@@ -11,6 +11,7 @@ export const categories = [
   { id: "river_large",  name: "Deshi River Fish (Large)" },
   { id: "river_small",  name: "Small Deshi River Fish" },
   { id: "shrimp_prawn", name: "Shrimp & Prawn" },
+  { id: "sea_fish",     name: "Sea Fish" },
   { id: "premium_sea",  name: "Premium & Seasonal Sea Fish" },
 ];
 
@@ -18,6 +19,7 @@ export const CATEGORY_MAP = {
   RIVER_LARGE: "river_large",
   RIVER_SMALL: "river_small",
   SHRIMP_PRAWN: "shrimp_prawn",
+  SEA_FISH: "sea_fish",
   PREMIUM_SEA: "premium_sea",
 };
 
@@ -80,11 +82,14 @@ export const products = [
   
 
   // Media
-  image: "/images/fish/pangas/pangas_main.png",
+  image: "/images/fish/pangas/p-1.webp",
   images: [
-    "/images/fish/pangas/pangas_main.png",
-    "/images/fish/pangas/pangas_cut.png",
+    "/images/fish/pangas/p-1.webp",
+    "/images/fish/pangas/p-2.webp",
+    "/images/fish/pangas/p-3.webp",
+    "/images/fish/pangas/p-4.webp",
   ],
+
 
 
 
@@ -458,11 +463,14 @@ sizePricing: [
 
 
   // Media
-  image: "/images/fish/ayer/ayer_main.png",
+  image: "/images/fish/ayer/ayr-1.webp",
   images: [
-    "/images/fish/ayer/ayer_main.png",
-    "/images/fish/ayer/ayer_cut.png",
+    "/images/fish/ayer/ayr-1.webp",
+    "/images/fish/ayer/ayr-2.webp",
+    "/images/fish/ayer/ayr-3.webp",
+    "/images/fish/ayer/ayr-4.webp",
   ],
+
 
   // Badges
   badges: ["River fish", "High protein", "Shasthoshommoto"],
@@ -695,7 +703,13 @@ sizePricing: [
 
   // Media
   image: "/images/fish/desi_koi/desi_koi.png",
-  images: ["/images/fish/desi_koi/desi_koi.png"],
+  images: [
+    "/images/fish/desi_koi/20260116_063405.jpg",
+    "/images/fish/desi_koi/20260116_063410.jpg",
+    "/images/fish/desi_koi/20260116_063418.jpg",
+    "/images/fish/desi_koi/20260116_063422.jpg",
+    "/images/fish/desi_koi/desi_koi.png"
+  ],
 
   // Badges
   badges: ["River fish", "Shasthoshommoto", "Nutritious"],
@@ -832,8 +846,13 @@ sizePricing: [
   sizePricing: null,
 
   // Media
-  image: "/images/fish/shing.jpg",
-  images: ["/images/fish/shing.jpg"],
+  image: "/images/fish/Shing/shing-1.webp",
+  images: [
+    "/images/fish/Shing/shing-1.webp",
+    "/images/fish/Shing/shing-2.webp",
+    "/images/fish/Shing/shing-3.webp",
+  ],
+
 
   // Badges
   badges: ["River fish", "Shasthoshommoto", "Easy to digest"],
@@ -929,8 +948,8 @@ sizePricing: [
 
   // Names
   title: {
-    bn: "বাইম",
-    en: "Baim",
+    bn: "তারা বাইম",
+    en: "Tara Baim",
   },
   subtitle: {
     bn: "শক্ত ও চিকন মাংসের স্বাদে অনন্য দেশি মাছ",
@@ -970,8 +989,13 @@ sizePricing: [
   sizePricing: null,
 
   // Media
-  image: "/images/fish/baim.jpg",
-  images: ["/images/fish/baim.jpg"],
+  image: "/images/fish/Tara%20Baim/tb-1.webp",
+  images: [
+    "/images/fish/Tara%20Baim/tb-1.webp",
+    "/images/fish/Tara%20Baim/tb-2.webp",
+    "/images/fish/Tara%20Baim/tb-3.webp",
+    "/images/fish/Tara%20Baim/tb-4.webp",
+  ],
 
   // Badges
   badges: ["River fish", "Lean meat", "Shasthoshommoto"],
@@ -1059,8 +1083,157 @@ sizePricing: [
   },
 },
 },
-  {
+
+{
   id: 8,
+  slug: "poa-mach",
+  category: CATEGORY_MAP.SEA, // ✅ moved from SEA_FISH to SEA
+  source: "sea",
+
+  // Legacy-safe names
+  name: "পোয়া মাছ",
+  nameBn: "পোয়া মাছ",
+  nameEn: "Poa Fish (Croaker)",
+
+  // New schema names
+  title: {
+    bn: "পোয়া মাছ",          // ✅ cleaned
+    en: "Poa Fish",          // ✅ cleaned
+  },
+  subtitle: {
+    bn: "নরম-ঝুরঝুরে সাদা মাংস—ঝোল, ভুনা ও ফ্রাইয়ের জন্য দারুণ জনপ্রিয়",
+    en: "Soft, flaky white meat—great for curry, bhuna, and frying",
+  },
+
+  // Pricing (LEGACY-SAFE)
+  // Homepage will show: "Starts from ৳650/kg"
+  price: 0,                  // ✅ avoid conflicting random legacy price
+  priceMin: 650,
+  priceMax: 650,
+  unit: "kg",
+  weight: "1kg",
+
+  // Media
+  image: "/images/fish/poa/poa-1.webp",
+  images: [
+    "/images/fish/poa/poa-1.webp",
+    "/images/fish/poa/poa-2.webp",
+    "/images/fish/poa/poa-3.webp",
+    "/images/fish/poa/poa-4.webp",
+  ],
+
+  // Badges
+  badges: ["Sea fish", "White meat", "High protein", "Great for curry"],
+
+  // Price note (single source of truth)
+  priceNote: {
+    bn: "সাইজ ও মৌসুম অনুযায়ী দাম পরিবর্তিত হতে পারে।",
+    en: "Price may vary by size and season.",
+  },
+
+  // Short description
+  shortDescription: {
+    bn: "পোয়া মাছ—নরম সাদা মাংস, হালকা গন্ধ, ঝোল-ভুনা-ফ্রাই সব রান্নায় মানানসই।",
+    en: "Poa fish—soft white flesh, mild aroma, perfect for curry, bhuna, or frying.",
+  },
+
+  // Overview
+  overview: {
+    bn:
+      "পোয়া মাছ (Croaker) উপকূলীয়/সামুদ্রিক অঞ্চলে জনপ্রিয় একটি মাছ। এর মাংস সাদা ও ঝুরঝুরে—ঝোল, ভুনা, ফ্রাই, কিংবা টক ঝালে খুব ভালো লাগে। মাঝারি পরিমাণ কাঁটা থাকতে পারে, তাই বাচ্চা/বয়স্কদের জন্য রান্নার সময় কাঁটা সাবধানে দেখে নেওয়া ভালো। তাজা পোয়া মাছের গন্ধ হালকা, চোখ স্বচ্ছ ও ফুলে থাকা, আর গিলস লালচে থাকে—এসব দেখে কিনলে ভালো পাওয়া যায়।",
+    en:
+      "Poa (Croaker) is a popular coastal/sea fish known for its white, flaky flesh and mild aroma. It works well in curry, bhuna, frying, and tangy spicy preparations. It may have moderate pin bones, so careful deboning is recommended—especially for kids and seniors. For freshness, look for clear bulging eyes and reddish gills with a clean, mild smell.",
+  },
+
+  // Health benefits
+  healthBenefits: {
+    bn: [
+      "উচ্চ প্রোটিন—মাংসপেশি রক্ষণাবেক্ষণ ও দৈনন্দিন শক্তিতে সহায়ক।",
+      "তুলনামূলক কম ফ্যাট—হালকা, স্বাস্থ্যসম্মত খাবার হিসেবে ভালো।",
+      "ওমেগা-৩ (পরিমাণ ভিন্ন হতে পারে)—হার্ট ও মস্তিষ্কের জন্য উপকারী ফ্যাটি অ্যাসিড সরবরাহ করে।",
+      "ভিটামিন B12 ও মিনারেলস—রক্ত ও স্নায়ুর স্বাস্থ্যে ভূমিকা রাখে।",
+    ],
+    en: [
+      "High protein—supports muscle maintenance and daily energy.",
+      "Relatively low fat—fits well in lighter, healthier meals.",
+      "Omega-3 (amount can vary)—supports heart and brain health.",
+      "Vitamin B12 and minerals—support blood and nerve health.",
+    ],
+  },
+
+  // Cooking tips
+  cookingTips: {
+    bn: [
+      "ভালোভাবে স্কেল/আঁশ পরিষ্কার করে ধুয়ে পানি ঝরিয়ে নিন।",
+      "ঝোলের জন্য: হালকা ভাজা করে নিলে মাছ ভাঙবে কম এবং স্বাদ বাড়বে।",
+      "ফ্রাই করলে মাঝারি আঁচে করুন—অতিরিক্ত কড়া করলে মাংস শুকিয়ে যেতে পারে।",
+      "কাঁটা থাকার কারণে পরিবেশনের আগে টুকরো করে/বোন-চেক করে নিলে খাওয়া সহজ হয়।",
+    ],
+    en: [
+      "Descale properly, rinse, and drain well before cooking.",
+      "For curry: light shallow-frying helps prevent breaking and boosts flavor.",
+      "For frying, use medium heat—over-frying can dry out the flesh.",
+      "Check for pin bones before serving, especially for easy eating.",
+    ],
+  },
+
+  // Nutrition
+  nutrition: {
+    per100g: {
+      Calories: "প্রায় ৯৫–১১০ কিলোক্যালরি",
+      Protein: "প্রায় ১৯–২২ গ্রাম",
+      Fat: "প্রায় ১.৫–৩ গ্রাম",
+      SaturatedFat: "প্রায় ০.৪–০.৭ গ্রাম",
+      Cholesterol: "প্রায় ৫৫–৮৫ মি.গ্রা.",
+      Omega3: "প্রায় ০.২–০.৬ গ্রাম",
+      Sodium: "প্রায় ৬০–৯০ মি.গ্রা.",
+      Potassium: "প্রায় ৩০০–৪২০ মি.গ্রা.",
+      Calcium: "প্রায় ২০–৪০ মি.গ্রা.",
+      Iron: "প্রায় ০.৬–১.২ মি.গ্রা.",
+      VitaminD: "প্রায় ০.৫–২.০ মাইক্রোগ্রাম",
+      VitaminB12: "প্রায় ১.০–২.৫ মাইক্রোগ্রাম",
+      Note:
+        "এগুলো আনুমানিক মান। মাছের প্রজাতি/উৎস, টাটকা অবস্থা ও রান্নার ধরন অনুযায়ী মান পরিবর্তিত হতে পারে।",
+    },
+
+    enPer100g: {
+      Calories: "Approx. 95–110 kcal",
+      Protein: "Approx. 19–22 g",
+      Fat: "Approx. 1.5–3 g",
+      SaturatedFat: "Approx. 0.4–0.7 g",
+      Cholesterol: "Approx. 55–85 mg",
+      Omega3: "Approx. 0.2–0.6 g",
+      Sodium: "Approx. 60–90 mg",
+      Potassium: "Approx. 300–420 mg",
+      Calcium: "Approx. 20–40 mg",
+      Iron: "Approx. 0.6–1.2 mg",
+      VitaminD: "Approx. 0.5–2.0 µg",
+      VitaminB12: "Approx. 1.0–2.5 µg",
+      Note:
+        "Values are approximate. Natural variation occurs by species/source, freshness, and cooking method.",
+    },
+  },
+
+  // =========================
+  // New schema (simple kg-based pricing)
+  // =========================
+  pricingModel: "KG_SIMPLE",
+  sellBy: "kg",
+
+  // Homepage card text: "Starts from ৳650/kg"
+  startsFrom: {
+    pricePerKg: 650, // ✅ consistent with your other objects
+    unit: "kg",
+  },
+
+  qtyDefaults: {
+    default: 1,
+    min: 1,
+    step: 1,
+  },
+},
+  {
+  id: 9,
   slug: "faisa",
   category: CATEGORY_MAP.RIVER_LARGE,
   source: "river",
@@ -1108,8 +1281,13 @@ sizePricing: [
   sizePricing: null,
 
   // Media
-  image: "/images/fish/faisa.jpg",
-  images: ["/images/fish/faisa.jpg"],
+  image: "/images/fish/faisha/faisha-1.webp",
+  images: [
+    "/images/fish/faisha/faisha-1.webp",
+    "/images/fish/faisha/faisha-2.webp",
+    "/images/fish/faisha/faisha-3.webp",
+    "/images/fish/faisha/faisha-4.webp",
+  ],
 
   // Badges
   badges: ["River fish", "Shasthoshommoto", "Everyday fish"],
@@ -1200,7 +1378,7 @@ sizePricing: [
 
   // ========== Small Deshi River Fish ==========
   {
-  id: 9,
+  id: 10,
   slug: "kajoli",
   category: CATEGORY_MAP.RIVER_SMALL,
   source: "river",
@@ -1248,8 +1426,12 @@ sizePricing: [
   sizePricing: null,
 
   // Media
-  image: "/images/fish/kajoli.jpg",
-  images: ["/images/fish/kajoli.jpg"],
+  image: "/images/fish/kajoli/kajoli-1.webp",
+  images: [
+    "/images/fish/kajoli/kajoli-1.webp",
+    "/images/fish/kajoli/kajoli-2.webp",
+  ],
+
 
   // Badges
   badges: ["Small fish", "River fish", "Shasthoshommoto"],
@@ -1340,7 +1522,7 @@ sizePricing: [
 },
 },
   {
-  id: 10,
+  id: 11,
   slug: "tengra",
   category: CATEGORY_MAP.RIVER_SMALL,
   source: "river",
@@ -1398,9 +1580,14 @@ sizePricing: [
 
   // =========================
   // Media
-  // =========================
-  image: "/images/fish/tengra.jpg",
-  images: ["/images/fish/tengra.jpg"],
+  image: "/images/fish/tengra/tengra-1.webp",
+  images: [
+    "/images/fish/Tengra/Tengra-1.webp",
+    "/images/fish/Tengra/Tengra-2.webp",
+    "/images/fish/Tengra/Tengra-3.webp",
+    "/images/fish/Tengra/Tengra-4.webp",
+  ],
+
 
   // =========================
   // Badges
@@ -1507,7 +1694,7 @@ sizePricing: [
 },
 },
   {
-  id: 11,
+  id: 12,
   slug: "kachki",
   category: CATEGORY_MAP.RIVER_SMALL,
   source: "river",
@@ -1565,9 +1752,12 @@ sizePricing: [
 
   // =========================
   // Media
-  // =========================
-  image: "/images/fish/kachki.jpg",
-  images: ["/images/fish/kachki.jpg"],
+  image: "/images/fish/kachki/k-1.webp",
+  images: [
+    "/images/fish/kachki/k-1.webp",
+    "/images/fish/kachki/k-2.webp",
+  ],
+
 
   // =========================
   // Badges
@@ -1676,7 +1866,7 @@ sizePricing: [
 },
 },
   {
-  id: 12,
+  id: 13,
   slug: "mola",
   category: CATEGORY_MAP.RIVER_SMALL,
   source: "river",
@@ -1734,9 +1924,12 @@ sizePricing: [
 
   // =========================
   // Media
-  // =========================
-  image: "/images/fish/mola.jpg",
-  images: ["/images/fish/mola.jpg"],
+  image: "/images/fish/mola/mola-1.webp",
+  images: [
+    "/images/fish/mola/mola-1.webp",
+    "/images/fish/mola/mola-2.webp",
+  ],
+
 
   // =========================
   // Badges
@@ -1849,7 +2042,7 @@ sizePricing: [
 
   // ========== Shrimp & Prawn ==========
   {
-  id: 13,
+  id: 14,
   slug: "chingri-golda",
   category: CATEGORY_MAP.SHRIMP_PRAWN,
   source: "sea_river",
@@ -1877,8 +2070,15 @@ sizePricing: [
   weight: "1kg",
 
   // Media
-  image: "/images/fish/chingri_golda.jpg",
-  images: ["/images/fish/chingri_golda.jpg"],
+  image: "/images/fish/golda/golda-1.webp",
+  images: [
+    "/images/fish/golda/golda-1.webp",
+    "/images/fish/golda/golda-2.webp",
+    "/images/fish/golda/golda-3.webp",
+    "/images/fish/golda/golda-4.webp",
+    "/images/fish/golda/golda-5.webp",
+  ],
+
 
   // Badges
   badges: ["Shrimp & prawn", "Premium", "High protein", "Low saturated fat"],
@@ -2013,7 +2213,7 @@ sizePricing: [
   ],
 },
   {
-  id: 14,
+  id: 15,
   slug: "chingri-bagda",
   category: CATEGORY_MAP.SHRIMP_PRAWN,
   source: "sea",
@@ -2041,8 +2241,14 @@ sizePricing: [
   weight: "1kg",
 
   // Media
-  image: "/images/fish/chingri_bagda.jpg",
-  images: ["/images/fish/chingri_bagda.jpg"],
+  image: "/images/fish/bagda/bagda-1.webp",
+  images: [
+    "/images/fish/bagda/bagda-1.webp",
+    "/images/fish/bagda/bagda-2.webp",
+    "/images/fish/bagda/bagda-3.webp",
+    "/images/fish/bagda/bagda-4.webp",
+  ],
+
 
   // Badges
   badges: ["Shrimp & prawn", "Sea fish", "High protein", "Large size"],
@@ -2150,7 +2356,7 @@ sizePricing: [
   },
 },
   {
-  id: 15,
+  id: 16,
   slug: "chingri-chaka",
   category: CATEGORY_MAP.SHRIMP_PRAWN,
   source: "sea",
@@ -2287,7 +2493,7 @@ sizePricing: [
   },
 },
   {
-  id: 16,
+  id: 17,
   slug: "chingri-kathaly",
   category: CATEGORY_MAP.SHRIMP_PRAWN,
   source: "sea",
@@ -2429,7 +2635,7 @@ sizePricing: [
   },
 },
   {
-  id: 17,
+  id: 18,
   slug: "chingri-icha",
   category: CATEGORY_MAP.SHRIMP_PRAWN,
   source: "sea",
@@ -2457,8 +2663,13 @@ sizePricing: [
   weight: "1kg",
 
   // Media
-  image: "/images/fish/chingri_icha.jpg",
-  images: ["/images/fish/chingri_icha.jpg"],
+  image: "/images/fish/Icha/icha-1.webp",
+  images: [
+    "/images/fish/Icha/icha-1.webp",
+    "/images/fish/Icha/icha-2.webp",
+    "/images/fish/Icha/icha-3.webp",
+  ],
+
 
   // Badges
   badges: ["Shrimp & prawn", "Small", "High protein", "Quick cook"],
@@ -2602,8 +2813,14 @@ sizePricing: [
   },
 
   // Media
-  image: "/images/fish/coral.jpg",
-  images: ["/images/fish/coral.jpg"],
+  image: "/images/fish/koral/koral-1.webp",
+  images: [
+    "/images/fish/koral/koral-1.webp",
+    "/images/fish/koral/koral-2.webp",
+    "/images/fish/koral/koral-3.webp",
+    "/images/fish/koral/koral-4.webp",
+  ],
+
 
   // Badges
   badges: ["Sea fish", "Premium", "Lean protein", "Low fat"],
@@ -2757,7 +2974,7 @@ sizePricing: [
   },
 },
   {
-  id: 18,
+  id: 19,
   slug: "lobster",
   category: CATEGORY_MAP.PREMIUM_SEA,
   source: "sea",
@@ -2937,7 +3154,7 @@ sizePricing: [
   },
 },
   {
-  id: 19,
+  id: 20,
   slug: "ilish",
   category: CATEGORY_MAP.PREMIUM_SEA,
   source: "river_sea",
@@ -3124,7 +3341,7 @@ sizePricing: [
   ]
 },
   {
-  id: 20,
+  id: 21,
   slug: "rupchanda",
   category: CATEGORY_MAP.PREMIUM_SEA,
   source: "sea",
@@ -3147,9 +3364,15 @@ sizePricing: [
   unit: "kg",
   weight: "1kg",
 
-  // Media
-  image: "/images/fish/rupchanda.jpg",
-  images: ["/images/fish/rupchanda.jpg"],
+  // Media (folder exists: rupchada)
+  image: "/images/fish/rupchada/rup-1.webp",
+  images: [
+    "/images/fish/rupchada/rup-1.webp",
+    "/images/fish/rupchada/rup-2.webp",
+    "/images/fish/rupchada/rup-3.webp",
+    "/images/fish/rupchada/rup-4.webp",
+  ],
+
 
   // Badges
   badges: ["Sea fish", "Premium"],
@@ -3204,38 +3427,38 @@ sizePricing: [
 
   // Nutrition
   nutrition: {
-  per100g: {
-    Calories: "প্রায় ১২০ কিলোক্যালরি",
-    Protein: "প্রায় ২১ গ্রাম",
-    Fat: "প্রায় ৩.০ গ্রাম",
-    SaturatedFat: "প্রায় ০.৮ গ্রাম",
-    Cholesterol: "প্রায় ৬০ মি.গ্রা.",
-    Omega3: "প্রায় ০.৫ গ্রাম",
-    Sodium: "প্রায় ৭০ মি.গ্রা.",
-    Potassium: "প্রায় ৩৫০ মি.গ্রা.",
-    Calcium: "প্রায় ২০ মি.গ্রা.",
-    Iron: "প্রায় ১.০ মি.গ্রা.",
-    VitaminD: "প্রায় ২.৫ মাইক্রোগ্রাম",
-    VitaminB12: "প্রায় ২.৮ মাইক্রোগ্রাম",
-    Note: "ফ্যাট কম ও প্রোটিন বেশি; সাইজ ও উৎস অনুযায়ী কিছুটা তারতম্য হতে পারে।",
-  },
+    per100g: {
+      Calories: "প্রায় ১২০ কিলোক্যালরি",
+      Protein: "প্রায় ২১ গ্রাম",
+      Fat: "প্রায় ৩.০ গ্রাম",
+      SaturatedFat: "প্রায় ০.৮ গ্রাম",
+      Cholesterol: "প্রায় ৬০ মি.গ্রা.",
+      Omega3: "প্রায় ০.৫ গ্রাম",
+      Sodium: "প্রায় ৭০ মি.গ্রা.",
+      Potassium: "প্রায় ৩৫০ মি.গ্রা.",
+      Calcium: "প্রায় ২০ মি.গ্রা.",
+      Iron: "প্রায় ১.০ মি.গ্রা.",
+      VitaminD: "প্রায় ২.৫ মাইক্রোগ্রাম",
+      VitaminB12: "প্রায় ২.৮ মাইক্রোগ্রাম",
+      Note: "ফ্যাট কম ও প্রোটিন বেশি; সাইজ ও উৎস অনুযায়ী কিছুটা তারতম্য হতে পারে।",
+    },
 
-  enPer100g: {
-    Calories: "Approx. 120 kcal",
-    Protein: "Approx. 21 g",
-    Fat: "Approx. 3.0 g",
-    SaturatedFat: "Approx. 0.8 g",
-    Cholesterol: "Approx. 60 mg",
-    Omega3: "Approx. 0.5 g",
-    Sodium: "Approx. 70 mg",
-    Potassium: "Approx. 350 mg",
-    Calcium: "Approx. 20 mg",
-    Iron: "Approx. 1.0 mg",
-    VitaminD: "Approx. 2.5 µg",
-    VitaminB12: "Approx. 2.8 µg",
-    Note: "Lean, high-protein marine fish. Natural variation may occur by size and source.",
+    enPer100g: {
+      Calories: "Approx. 120 kcal",
+      Protein: "Approx. 21 g",
+      Fat: "Approx. 3.0 g",
+      SaturatedFat: "Approx. 0.8 g",
+      Cholesterol: "Approx. 60 mg",
+      Omega3: "Approx. 0.5 g",
+      Sodium: "Approx. 70 mg",
+      Potassium: "Approx. 350 mg",
+      Calcium: "Approx. 20 mg",
+      Iron: "Approx. 1.0 mg",
+      VitaminD: "Approx. 2.5 µg",
+      VitaminB12: "Approx. 2.8 µg",
+      Note: "Lean, high-protein marine fish. Natural variation may occur by size and source.",
+    },
   },
-},
 
   // =========================
   // Size-based pricing (pcs per kg)
@@ -3246,7 +3469,7 @@ sizePricing: [
   // Homepage helper: show “Starts from ৳1300/kg”
   startsFrom: {
     pricePerKg: 1300,
-    unit: "kg", 
+    unit: "kg",
   },
 
   qtyDefaults: {

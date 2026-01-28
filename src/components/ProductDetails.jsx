@@ -79,6 +79,16 @@ const ProductDetails = ({ product, onClose, addToCart }) => {
   if (!product) return null;
 
   const images = getImages(product);
+  // ✅ reset image index when opening a new product
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [product?.id]);
+
+  // ✅ clamp index if images array length changes
+  useEffect(() => {
+    if (selectedImage >= images.length) setSelectedImage(0);
+  }, [images.length, selectedImage]);
+
   const model = product?.pricingModel || "LEGACY";
   const sellBy = product?.sellBy || "kg";
 

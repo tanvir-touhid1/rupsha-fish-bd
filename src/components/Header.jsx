@@ -80,10 +80,12 @@ const Header = ({ cartCount, onOpenCart }) => {
 
   // Language button styles (KEEP UI)
   const pillBase =
-    "px-3 py-1 rounded-full text-sm font-semibold border transition-all duration-200";
-  const pillActive = "bg-[#3D84A7] text-white border-[#3D84A7]";
+  "px-3 py-1.5 rounded-full text-sm font-semibold border transition-all duration-200 backdrop-blur";
+  const pillActive =
+    "bg-[#3D84A7]/90 text-white border-white/50 shadow-[0_10px_26px_-18px_rgba(0,0,0,0.45)]";
   const pillIdle =
-    "bg-white text-gray-700 border-gray-200 hover:border-[#3D84A7] hover:text-[#3D84A7]";
+    "bg-white/60 text-slate-700 border-white/60 hover:bg-white/80 hover:text-slate-900 shadow-sm";
+
 
   return (
     <>
@@ -157,7 +159,15 @@ const Header = ({ cartCount, onOpenCart }) => {
       </div>
 
       {/* Main Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/75 shadow-sm">
+      <header className="relative sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-white/60 shadow-[0_12px_40px_-28px_rgba(0,0,0,0.45)]">
+        {/* Premium glow backdrop */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 md:h-20">
+          <div className="absolute -top-10 left-1/3 h-24 w-80 rounded-full bg-[#3D84A7]/12 blur-3xl" />
+          <div className="absolute -top-12 right-1/3 h-28 w-80 rounded-full bg-[#46CDCF]/10 blur-3xl" />
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
+        </div>
+
+
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center py-2 md:py-3">
             {/* Logo */}
@@ -266,7 +276,7 @@ const Header = ({ cartCount, onOpenCart }) => {
               <button
                 type="button"
                 onClick={toggleLang}
-                className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors"
+                className="px-3 py-2 rounded-full text-sm font-semibold text-slate-700 hover:text-slate-900 hover:bg-white/60 border border-transparent hover:border-white/70 transition-all duration-200"
                 aria-label={lang === "bn" ? "Switch to English" : "বাংলায় পরিবর্তন করুন"}
               >
                 {lang === "bn" ? "EN" : "বাংলা"}
