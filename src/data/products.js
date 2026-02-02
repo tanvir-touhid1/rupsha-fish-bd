@@ -277,8 +277,9 @@ sizePricing: [
   weight: "1kg",
 
   // Media
-  image: "/images/fish/desi_boal/desi_boal.png",
-  images: ["/images/fish/desi_boal/desi_boal.png"],
+  image: "/images/fish/boal/boal-1.webp",
+  images: ["/images/fish/boal/boal-1.webp"],
+
 
   // Badges
   badges: ["River fish", "Popular choice", "Shasthoshommoto"],
@@ -2521,8 +2522,12 @@ sizePricing: [
   weight: "1kg",
 
   // Media
-  image: "/images/fish/chingri_kathaly.jpg",
-  images: ["/images/fish/chingri_kathaly.jpg"],
+  image: "/images/fish/kathaly/kathaly-1.webp",
+  images: [
+    "/images/fish/kathaly/kathaly-1.webp",
+    "/images/fish/kathaly/kathaly-2.webp",
+  ],
+
 
   // Badges
   badges: [
@@ -2973,8 +2978,201 @@ sizePricing: [
     en: "Our agent will confirm the final price by phone/WhatsApp.",
   },
 },
-  {
+{
   id: 19,
+  slug: "chitol",
+  category: CATEGORY_MAP.RIVER_LARGE,
+  source: "river",
+
+  // Names
+  title: {
+    bn: "চিতল",
+    en: "Chitol",
+  },
+  subtitle: {
+    bn: "দারুণ স্বাদ ও শক্ত-নরম টেক্সচার—মুইট্টা/কোফতা, ভাজা ও ঝোলে অনন্য",
+    en: "Signature taste and firm-tender texture—perfect for kofta, fry, and curry",
+  },
+
+  // Pricing (LEGACY-SAFE — keep these)
+  price: 420,          // legacy-safe
+  priceMin: 1400,
+  priceMax: 2200,
+  unit: "kg",
+  weight: "1kg",
+
+  // Media (use the latest reference exactly)
+  image: "/images/fish/chitol/c-1.webp",
+  images: [
+    "/images/fish/chitol/c-1.webp",
+  ],
+
+  // Badges
+  badges: ["Premium", "River fish", "Great for kofta", "Firm white meat"],
+
+  // Price note
+  priceNote: {
+    bn: "সাইজ অনুযায়ী দাম নির্ধারিত হয়—সাইজ যত বড়, প্রতি কেজির দাম তত বেশি।",
+    en: "Price varies based on size—bigger size means higher price per kg.",
+  },
+
+  // Short description
+  shortDescription: {
+    bn:
+      "চিতল মাছ—ঘন সাদা মাংস ও অনন্য স্বাদের জন্য বিখ্যাত। মুইট্টা/কোফতা, পেটি ভাজা বা ঝোলে রান্নায় অসাধারণ লাগে।",
+    en:
+      "Chitol—famous for dense white flesh and unique flavor. Excellent for kofta/mince, belly fry, and curries.",
+  },
+
+  // Overview
+  overview: {
+    bn:
+      "চিতল (Featherback/Knife fish) বাংলাদেশের নদী-খাল-বিলে পাওয়া প্রিমিয়াম স্বাদের একটি মাছ। এর মাংস ঘন ও সাদা, রান্নায় ভাঙে কম—তাই পেটি ভাজা, ঝোল, দই-চিতল এবং বিশেষ করে মুইট্টা/কোফতা তৈরিতে এটি সবচেয়ে জনপ্রিয়। চিতলে সূক্ষ্ম কাঁটা (pin-bones) থাকতে পারে, তাই কিমা/কোফতার জন্য কাঁটা ছাড়ানো কিমা বা ফিলে কাট নিলে খাওয়া বেশি সুবিধাজনক। সাইজ যত বড় হয়, সাধারণত কাটিং/মাংসের ইয়েল্ড বেশি হয় এবং বাজারদরও প্রতি কেজিতে বেশি হয়।",
+    en:
+      "Chitol (a featherback/knife fish) is a premium river fish in Bangladesh, loved for its dense white flesh that holds shape well in cooking. That makes it ideal for belly fry, curries, doi-chitol, and especially kofta/minced preparations. It may contain fine pin bones, so boneless mince or fillet cuts are often more convenient. Typically, larger size provides better yield and commands a higher price per kg in the market.",
+  },
+
+  // Health benefits
+  healthBenefits: {
+    bn: [
+      "উচ্চ মানের প্রোটিন: দৈনন্দিন শক্তি, মাংসপেশি রক্ষণাবেক্ষণ ও রিকভারি সাপোর্ট করে।",
+      "কম-চর্বিযুক্ত খাবার হিসেবে ভালো: ঝোল/স্টিম/হালকা ভুনায় রান্না করলে স্বাস্থ্যসম্মত থাকে।",
+      "ওমেগা-৩ ফ্যাটি অ্যাসিড (পরিমাণ ভিন্ন হতে পারে): হার্ট ও মস্তিষ্কের স্বাস্থ্যে সহায়ক।",
+      "ভিটামিন B12 ও প্রয়োজনীয় মিনারেল: স্নায়ু ও রক্ত তৈরিতে সহায়তা করে, ক্লান্তি কমাতে সাহায্য করতে পারে।",
+      "শিশু ও বয়স্কদের জন্য সতর্কতা: সূক্ষ্ম কাঁটা থাকতে পারে—কাঁটা ছাড়ানো কাট/কিমা বেছে নিলে খাওয়া নিরাপদ ও সহজ।",
+    ],
+    en: [
+      "High-quality protein: supports daily energy, muscle maintenance, and recovery.",
+      "Great as a low-fat meal: healthier when cooked in light curry, steamed, or low-oil bhuna.",
+      "Omega-3 (amount can vary): supports heart and brain health.",
+      "Vitamin B12 and key minerals: support nerve health and red blood cell formation.",
+      "Kid/senior-friendly with care: may have fine pin bones—boneless cuts or deboned mince is safer and easier.",
+    ],
+  },
+
+  // Cooking tips
+  cookingTips: {
+    bn: [
+      "মুইট্টা/কোফতার জন্য কাঁটা ছাড়ানো কিমা নিলে সবচেয়ে ভালো ফল পাবেন।",
+      "পেটি ভাজা করলে মাঝারি আঁচে শ্যালো ফ্রাই করুন—অতিরিক্ত কড়া করলে শক্ত হতে পারে।",
+      "ঝোলে রান্না করলে হালকা ভেজে নিলে মাছ ভাঙবে কম।",
+      "দই/গ্রেভিতে অতিরিক্ত সময় ফুটাবেন না—টেক্সচার শক্ত হয়ে যেতে পারে।",
+      "পরিবেশনের আগে সূক্ষ্ম কাঁটা চেক করুন—বিশেষ করে বাচ্চাদের ক্ষেত্রে।",
+    ],
+    en: [
+      "For kofta/mince dishes, choose properly deboned mince for best results.",
+      "For belly fry, shallow-fry on medium heat—over-frying can toughen the flesh.",
+      "For curry, light frying first helps the fish hold shape.",
+      "Avoid over-boiling in yogurt/gravy—texture can turn firm.",
+      "Check for pin bones before serving, especially for kids.",
+    ],
+  },
+
+  // Nutrition
+  nutrition: {
+    per100g: {
+      Calories: "প্রায় ৯০–১১০ কিলোক্যালরি",
+      Protein: "প্রায় ১৮–২২ গ্রাম",
+      Fat: "প্রায় ২–৪ গ্রাম",
+      SaturatedFat: "প্রায় ০.৬–১.০ গ্রাম",
+      Cholesterol: "প্রায় ৬০–৯৫ মি.গ্রা.",
+      Omega3: "প্রায় ০.২–০.৬ গ্রাম",
+      Sodium: "প্রায় ৬০–৯০ মি.গ্রা.",
+      Potassium: "প্রায় ৩০০–৪৫০ মি.গ্রা.",
+      VitaminD: "প্রায় ১.০–২.৫ মাইক্রোগ্রাম",
+      VitaminB12: "প্রায় ১.২–২.৮ মাইক্রোগ্রাম",
+      Note:
+        "প্রতি ১০০ গ্রাম কাঁচা মাছের গড় পুষ্টিগুণ। প্রজাতি, উৎস, সাইজ ও মৌসুম অনুযায়ী প্রাকৃতিকভাবে কিছুটা তারতম্য হতে পারে।",
+    },
+    enPer100g: {
+      Calories: "Approx. 90–110 kcal",
+      Protein: "Approx. 18–22 g",
+      Fat: "Approx. 2–4 g",
+      SaturatedFat: "Approx. 0.6–1.0 g",
+      Cholesterol: "Approx. 60–95 mg",
+      Omega3: "Approx. 0.2–0.6 g",
+      Sodium: "Approx. 60–90 mg",
+      Potassium: "Approx. 300–450 mg",
+      VitaminD: "Approx. 1.0–2.5 µg",
+      VitaminB12: "Approx. 1.2–2.8 µg",
+      Note:
+        "Average nutrition per 100 g raw fish. Natural variation may occur by species, source, size, and season.",
+    },
+  },
+
+  // =========================
+  // Size-based pricing (NEW, follows Pangas pattern)
+  // =========================
+
+  pricingModel: "WHOLE_BY_SIZE_COUNT",
+
+  sellBy: "count",
+
+  qtyDefaults: {
+    default: 1,
+    min: 1,
+    step: 1,
+  },
+
+  // NEW: Homepage-friendly summary
+  startsFrom: {
+    pricePerKg: 1400,
+    unit: "kg",
+  },
+
+  sizePricing: [
+    {
+      sizeKey: "1-2kg",
+      label: {
+        bn: "১–২ কেজি",
+        en: "1–2 kg",
+      },
+      pricePerKg: 1400,
+      approxWholeFishWeightKg: {
+        min: 1,
+        max: 2,
+      },
+    },
+    {
+      sizeKey: "2-3kg",
+      label: {
+        bn: "২–৩ কেজি",
+        en: "2–3 kg",
+      },
+      pricePerKg: 1600,
+      approxWholeFishWeightKg: {
+        min: 2,
+        max: 3,
+      },
+    },
+    {
+      sizeKey: "3-4kg",
+      label: {
+        bn: "৩–৪ কেজি",
+        en: "3–4 kg",
+      },
+      pricePerKg: 1900,
+      approxWholeFishWeightKg: {
+        min: 3,
+        max: 4,
+      },
+    },
+    {
+      sizeKey: "4-6kg",
+      label: {
+        bn: "৪–৬ কেজি",
+        en: "4–6 kg",
+      },
+      pricePerKg: 2200,
+      approxWholeFishWeightKg: {
+        min: 4,
+        max: 6,
+      },
+    },
+  ],
+},
+  {
+  id: 22,
   slug: "lobster",
   category: CATEGORY_MAP.PREMIUM_SEA,
   source: "sea",
@@ -3009,8 +3207,9 @@ sizePricing: [
   },
 
   // Media
-  image: "/images/fish/lobster.jpg",
-  images: ["/images/fish/lobster.jpg"],
+  image: "/images/fish/lobster/lobster-1.webp",
+  images: ["/images/fish/lobster/lobster-1.webp"],
+
 
   // Badges
   badges: ["Premium", "Special order", "High protein", "Luxury seafood"],
