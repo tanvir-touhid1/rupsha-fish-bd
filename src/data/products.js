@@ -2385,8 +2385,9 @@ sizePricing: [
   weight: "1kg",
 
   // Media
-  image: "/images/fish/chingri_chaka.jpg",
-  images: ["/images/fish/chingri_chaka.jpg"],
+  image: "/images/fish/chaka/c-1.webp",
+  images: ["/images/fish/chaka/c-1.webp"],
+
 
   // Badges
   badges: ["Shrimp & prawn", "Sea fish", "High protein", "Small size"],
@@ -3376,8 +3377,14 @@ sizePricing: [
   weight: "1kg",
 
   // Media
-  image: "/images/fish/ilish.jpg",
-  images: ["/images/fish/ilish.jpg"],
+  image: "/images/fish/hilsha/h-2.webp",
+  images: [
+    "/images/fish/hilsha/h-2.webp",
+    "/images/fish/hilsha/h-1.webp", 
+    "/images/fish/hilsha/h-3.webp",
+    "/images/fish/hilsha/h-4.webp",
+  ],
+
 
   // Badges
   badges: ["Premium", "Seasonal"],

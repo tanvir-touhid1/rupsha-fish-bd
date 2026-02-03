@@ -90,7 +90,7 @@ const Header = ({ cartCount, onOpenCart }) => {
   return (
     <>
       {/* Top Contact Bar */}
-      <div className="bg-gradient-to-r from-[#47466D] to-[#3D84A7] text-white py-2 px-4">
+      <div className="bg-gradient-to-r from-[#47466D] via-[#3D84A7] to-[#46CDCF] text-white py-2 px-4">
         <div className="container mx-auto">
           {/* Desktop Layout */}
           <div className="hidden sm:flex flex-row justify-center items-center gap-4 text-sm">
@@ -159,16 +159,54 @@ const Header = ({ cartCount, onOpenCart }) => {
       </div>
 
       {/* Main Header */}
-      <header className="relative sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-white/60 shadow-[0_12px_40px_-28px_rgba(0,0,0,0.45)]">
+      <header
+  className="
+    relative sticky top-0 z-40
+    bg-gradient-to-r from-[#F7FCFF]/75 via-[#EAF7FA]/90 to-[#F7FCFF]/75
+    backdrop-blur-xl
+    shadow-[0_12px_40px_-28px_rgba(0,0,0,0.45)]
+    before:content-[''] before:absolute before:inset-x-0 before:bottom-0 before:h-px
+    before:bg-gradient-to-r before:from-[#47466D]/35 before:via-[#3D84A7]/55 before:to-[#46CDCF]/55
+  "
+>
+
         {/* Premium glow backdrop */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 md:h-20">
           <div className="absolute -top-10 left-1/3 h-24 w-80 rounded-full bg-[#3D84A7]/12 blur-3xl" />
           <div className="absolute -top-12 right-1/3 h-28 w-80 rounded-full bg-[#46CDCF]/10 blur-3xl" />
-          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
         </div>
 
+        {/* ✅ Wave overlay */}
 
-        <div className="container mx-auto px-4">
+        
+  <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
+    {/* Wave near bottom */}
+    <svg
+      className="absolute -bottom-7 left-0 w-[150%] h-20 md:h-24 opacity-95"
+      viewBox="0 0 1440 120"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="M0,64 C120,90 240,20 360,44 C480,68 600,120 720,92 C840,64 960,10 1080,36 C1200,62 1320,112 1440,84 L1440,120 L0,120 Z"
+        fill="rgba(70,205,207,0.30)"
+      />
+    </svg>
+
+    {/* Secondary wave for depth */}
+    <svg
+      className="absolute -bottom-12 left-0 w-[150%] h-24 md:h-28 opacity-90 blur-[0.75px]"
+      viewBox="0 0 1440 140"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="M0,80 C160,30 320,130 480,80 C640,30 800,130 960,80 C1120,30 1280,130 1440,80 L1440,140 L0,140 Z"
+        fill="rgba(61,132,167,0.26)"
+      />
+    </svg>
+  </div>
+
+
+        <div className="relative z-[2] container mx-auto px-4">
           <div className="flex justify-between items-center py-2 md:py-3">
             {/* Logo */}
             <div className="flex items-center gap-3">
@@ -191,7 +229,7 @@ const Header = ({ cartCount, onOpenCart }) => {
               <button
                 type="button"
                 onClick={() => goToSection("home")}
-                className="text-gray-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
+                className="text-slate-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
               >
                 {labelHome}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#3D84A7] transition-all duration-200 group-hover:w-full" />
@@ -200,7 +238,7 @@ const Header = ({ cartCount, onOpenCart }) => {
               <button
                 type="button"
                 onClick={() => goToSection("products-section")}
-                className="text-gray-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
+                className="text-slate-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
               >
                 {labelProducts}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#3D84A7] transition-all duration-200 group-hover:w-full" />
@@ -209,7 +247,7 @@ const Header = ({ cartCount, onOpenCart }) => {
               <button
                 type="button"
                 onClick={onOpenCart}
-                className="text-gray-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
+                className="text-slate-700 hover:text-[#3D84A7] font-medium transition-colors duration-200 relative group"
               >
                 {labelCart}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#3D84A7] transition-all duration-200 group-hover:w-full" />
@@ -241,7 +279,16 @@ const Header = ({ cartCount, onOpenCart }) => {
               <button
                 type="button"
                 onClick={onOpenCart}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-all duration-300 group"
+                className="
+  flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold
+  bg-gradient-to-r from-white/60 via-[#EAF7FA]/70 to-white/60
+  text-slate-800 border border-white/60
+  shadow-sm
+  hover:from-white/80 hover:via-[#EAF7FA]/90 hover:to-white/80
+  hover:shadow-[0_14px_40px_-26px_rgba(0,0,0,0.45)]
+  transition-all duration-200 group
+"
+
                 aria-label={cartLabel}
               >
                 <svg
@@ -345,12 +392,13 @@ const Header = ({ cartCount, onOpenCart }) => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden bg-white border-t border-gray-200 py-4 px-4">
+          <div className="md:hidden bg-white/70 backdrop-blur-xl border-t border-white/60 py-4 px-4">
+
             <div className="flex flex-col gap-4">
               <button
                 type="button"
                 onClick={() => goToSection("home")}
-                className="text-left text-gray-700 hover:text-[#3D84A7] font-medium py-2"
+                className="text-left text-slate-700 hover:text-[#3D84A7] font-medium py-2"
               >
                 {labelHome}
               </button>
@@ -358,14 +406,14 @@ const Header = ({ cartCount, onOpenCart }) => {
               <button
                 type="button"
                 onClick={() => goToSection("products-section")}
-                className="text-left text-gray-700 hover:text-[#3D84A7] font-medium py-2"
+                className="text-left text-slate-700 hover:text-[#3D84A7] font-medium py-2"
               >
                 {labelProducts}
               </button>
 
               <button
                 type="button"
-                className="text-left text-gray-700 hover:text-[#3D84A7] font-medium py-2 flex items-center gap-2"
+                className="text-left text-slate-700 hover:text-[#3D84A7] font-medium py-2 flex items-center gap-2"
                 onClick={() => {
                   setIsMenuOpen(false);
                   onOpenCart?.();
